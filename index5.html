@@ -1,0 +1,2735 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChemBuild Tech | Materials Based Architecture</title>
+  <!-- Google Fonts: Cairo & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Tailwind (dev build) with the site's colour palette. For production, compile with the Tailwind CLI. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: {
+      navy: { 700: '#334155', 800: '#1E293B', 900: '#0F172A', 950: '#020617' },
+      skybrand: { 300: '#7DD3FC', 400: '#38BDF8', 500: '#0284C7', 600: '#0369A1' },
+      copper: { 400: '#F59E0B', 500: '#D97706', 600: '#B45309' }
+    } } } };
+  </script>
+  <style>
+    body {
+      background-color: #0F172A;
+      color: #F8FAFC;
+      font-family: 'Cairo', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .blueprint-bg {
+      background-color: #0F172A;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(2, 132, 199, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(217, 119, 6, 0.12) 0%, transparent 45%),
+        linear-gradient(rgba(51, 65, 85, 0.22) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(51, 65, 85, 0.22) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0F172A; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #0284C7; }
+
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(51, 65, 85, 0.85);
+    }
+
+    .material-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .material-card:hover {
+      transform: translateY(-4px);
+      border-color: #0284C7;
+      box-shadow: 0 12px 28px -8px rgba(2, 132, 199, 0.28);
+    }
+
+    .formula-badge {
+      font-family: 'JetBrains Mono', monospace;
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: #0284C7;
+      border: 2px solid #F8FAFC;
+      cursor: pointer;
+      margin-top: -7px;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.7);
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      background: #334155;
+      border-radius: 999px;
+    }
+
+    @keyframes pulseSlow {
+      0%, 100% { opacity: 0.85; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+    .animate-hex {
+      animation: pulseSlow 4s infinite ease-in-out;
+    }
+
+    @media print {
+      body, .blueprint-bg {
+        background: #ffffff !important;
+        color: #0f172a !important;
+      }
+      header, #auth-screen, .no-print, #toast-container, #material-modal, #admin-pin-modal {
+        display: none !important;
+      }
+      #app-workspace {
+        display: block !important;
+      }
+      .glass-panel {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        color: #0f172a !important;
+      }
+      .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
+        color: #1e293b !important;
+      }
+    }
+  </style>
+</head>
+<body class="blueprint-bg min-h-screen flex flex-col selection:bg-skybrand-500 selection:text-white">
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- =====================================================================
+       1. AUTHENTICATION PORTAL (FIREBASE AUTH + LIVE DEMO)
+       ===================================================================== -->
+  <section id="auth-screen" class="flex-1 flex items-center justify-center p-4 sm:p-6">
+    <div class="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 glass-panel rounded-3xl overflow-hidden shadow-2xl border border-navy-700">
+      
+      <!-- Brand Showcase Panel -->
+      <div class="lg:col-span-5 bg-gradient-to-br from-navy-900 via-navy-800 to-skybrand-600/20 p-8 flex flex-col justify-between border-b lg:border-b-0 lg:border-l border-navy-700 relative overflow-hidden">
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-14 h-14 rounded-2xl bg-navy-900/90 border border-skybrand-500/40 flex items-center justify-center shadow-lg shadow-skybrand-500/10 animate-hex">
+              <svg class="w-10 h-10" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" stroke="#0284C7" stroke-width="3" fill="rgba(2,132,199,0.08)"/>
+                <line x1="32" y1="4" x2="32" y2="16" stroke="#38BDF8" stroke-width="2"/>
+                <circle cx="32" cy="4" r="3" fill="#D97706"/>
+                <circle cx="56" cy="18" r="3" fill="#0284C7"/>
+                <circle cx="8" cy="18" r="3" fill="#0284C7"/>
+                <rect x="20" y="26" width="7" height="22" rx="1" fill="#F8FAFC"/>
+                <rect x="29" y="18" width="8" height="30" rx="1" fill="#D97706"/>
+                <rect x="39" y="30" width="6" height="18" rx="1" fill="#38BDF8"/>
+                <line x1="15" y1="48" x2="49" y2="48" stroke="#F8FAFC" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-2xl font-extrabold tracking-tight text-white" dir="ltr">ChemBuild <span class="text-skybrand-400">Tech</span></h1>
+              <p class="text-xs font-semibold tracking-wider text-copper-400 uppercase" dir="ltr">Materials Based Architecture</p>
+            </div>
+          </div>
+
+          <h2 class="text-xl font-bold text-white mb-3 leading-snug">
+            منصة كيمياء مواد البناء الأساسية والفرعية
+          </h2>
+          <p class="text-sm text-slate-300 leading-relaxed mb-6">
+            مشروع هندسي تفاعلي من إعداد فريق <strong class="text-skybrand-400">ChemBuild Tech</strong> يربط بين التركيب الجزيئي والتفاعلات الكيميائية لمواد التشييد وبين الأداء الميكانيكي والاستدامة المعمارية.
+          </p>
+        </div>
+
+        <div class="relative z-10 space-y-2.5 text-xs text-slate-300">
+          <div class="flex items-center gap-2.5 bg-navy-900/75 p-2.5 rounded-xl border border-navy-700/80">
+            <i class="fa-solid fa-shield-halved text-emerald-400 text-base"></i>
+            <span>تسجيل حسابات موثقة بالبريد الإلكتروني + حفظ البيانات</span>
+          </div>
+          <div class="flex items-center gap-2.5 bg-navy-900/75 p-2.5 rounded-xl border border-navy-700/80">
+            <i class="fa-solid fa-calculator text-copper-500 text-base"></i>
+            <span>حاسبة نسب الخلط الخرساني وتأثير نسبة (w/c)</span>
+          </div>
+          <div class="flex items-center gap-2.5 bg-navy-900/75 p-2.5 rounded-xl border border-navy-700/80">
+            <i class="fa-solid fa-sliders text-skybrand-400 text-base"></i>
+            <span>لوحة تحكم (Admin Dashboard) لإدارة التقييمات والأعضاء</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Login / Sign Up Panel -->
+      <div class="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center bg-navy-900/65">
+        
+        <!-- Firebase Connection Status Pill -->
+        <div class="flex items-center justify-between gap-2 mb-4">
+          <span id="firebase-status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+            <i class="fa-solid fa-circle-dot"></i>
+            <span>جاري التحقق من اتصال السحابة...</span>
+          </span>
+          <button type="button" id="btn-open-admin-from-auth" class="text-[11px] font-bold text-slate-400 hover:text-copper-400 transition cursor-pointer">
+            <i class="fa-solid fa-lock ml-1"></i> <span data-i18n="adminLogin">دخول المشرف (Admin)</span>
+          </button>
+        </div>
+
+        <!-- Live Presentation Quick Bypass -->
+        <div class="mb-5 p-4 rounded-2xl bg-gradient-to-r from-copper-500/20 via-copper-500/10 to-skybrand-500/20 border border-copper-500/40 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold text-copper-400 mb-0.5">
+              <i class="fa-solid fa-bolt"></i> وضع العرض المباشر في القاعة (Live Demo)
+            </span>
+            <p class="text-xs text-slate-300">دخول فوري بدون كلمة مرور لتقييم دكتورة المادة وطلاب الدفعة</p>
+          </div>
+          <button type="button" id="btn-live-demo" class="w-full sm:w-auto whitespace-nowrap px-4 py-2.5 rounded-xl bg-copper-500 hover:bg-copper-600 text-white font-bold text-sm shadow-lg shadow-copper-500/25 transition flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-chalkboard-user"></i>
+            <span data-i18n="liveDemo">دخول المتخصص / العرض</span>
+          </button>
+        </div>
+
+        <!-- Auth Tabs -->
+        <div class="grid grid-cols-2 p-1 bg-navy-950 rounded-xl border border-navy-700 mb-5">
+          <button type="button" id="tab-login" class="py-2.5 rounded-lg text-sm font-bold bg-skybrand-500 text-white shadow transition cursor-pointer">
+            <span data-i18n="login">تسجيل الدخول</span>
+          </button>
+          <button type="button" id="tab-signup" class="py-2.5 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition cursor-pointer">
+            <span data-i18n="signup">إنشاء حساب جديد</span>
+          </button>
+        </div>
+
+        <!-- Auth Form -->
+        <form id="auth-form" class="space-y-3.5">
+          <div id="signup-extra-fields" class="hidden space-y-3.5">
+            <div>
+              <label for="auth-name" class="block text-xs font-semibold text-slate-300 mb-1">الاسم الكامل</label>
+              <div class="relative">
+                <i class="fa-solid fa-user absolute right-3.5 top-3.5 text-slate-400 text-sm"></i>
+                <input type="text" id="auth-name" name="name" autocomplete="name" placeholder="اكتب اسمك الكامل هنا..." class="w-full pr-10 pl-4 py-2.5 rounded-xl bg-navy-800 border border-navy-700 text-white text-sm focus:outline-none focus:border-skybrand-500 transition" />
+              </div>
+            </div>
+            <div>
+              <label for="auth-role" class="block text-xs font-semibold text-slate-300 mb-1">الصفة الأكاديمية</label>
+              <select id="auth-role" name="role" class="w-full px-4 py-2.5 rounded-xl bg-navy-800 border border-navy-700 text-white text-sm focus:outline-none focus:border-skybrand-500 transition">
+                <option value="طالب / طالبة بالدفعة">طالب / طالبة بالدفعة</option>
+                <option value="دكتورة المادة (لجنة التقييم)">دكتورة المادة (لجنة التقييم)</option>
+                <option value="فريق مشروع ChemBuild Tech">عضو فريق مشروع ChemBuild Tech</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="auth-email" class="block text-xs font-semibold text-slate-300 mb-1">البريد الإلكتروني (يُرسل إليه رابط التفعيل)</label>
+            <div class="relative">
+              <i class="fa-solid fa-envelope absolute right-3.5 top-3.5 text-slate-400 text-sm"></i>
+              <input type="email" id="auth-email" name="email" autocomplete="email" required placeholder="name@example.com" dir="ltr" class="w-full pr-10 pl-4 py-2.5 rounded-xl bg-navy-800 border border-navy-700 text-white text-sm text-right focus:outline-none focus:border-skybrand-500 transition" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="auth-password" class="block text-xs font-semibold text-slate-300">كلمة المرور (6 أحرف على الأقل)</label>
+              <button type="button" id="btn-forgot-password" class="text-[11px] font-bold text-skybrand-400 hover:underline cursor-pointer">
+                نسيت كلمة المرور؟ (إرسال رابط تعيين)
+              </button>
+            </div>
+            <div class="relative">
+              <i class="fa-solid fa-lock absolute right-3.5 top-3.5 text-slate-400 text-sm"></i>
+              <input type="password" id="auth-password" name="password" autocomplete="current-password" required minlength="6" placeholder="••••••••" dir="ltr" class="w-full pr-10 pl-4 py-2.5 rounded-xl bg-navy-800 border border-navy-700 text-white text-sm text-right focus:outline-none focus:border-skybrand-500 transition" />
+            </div>
+          </div>
+
+          <button type="submit" id="auth-submit-btn" class="w-full py-3 rounded-xl bg-skybrand-500 hover:bg-skybrand-600 text-white font-bold text-sm shadow-lg shadow-skybrand-500/25 transition flex items-center justify-center gap-2 cursor-pointer mt-2">
+            <span id="auth-submit-text">دخول إلى المنصة</span>
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+        </form>
+
+        <p class="text-center text-xs text-slate-400 mt-4">
+          تطوير فريق <span class="text-skybrand-400 font-bold">ChemBuild Tech</span> • مدعوم بـ <span class="text-copper-400 font-mono">Firebase Auth & Cloud Firestore</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       2. MAIN APPLICATION WORKSPACE
+       ===================================================================== -->
+  <div id="app-workspace" class="hidden flex-1 flex-col">
+    
+    <!-- Email Verification Alert Banner (Shown if logged in via Email & not yet verified) -->
+    <div id="verify-email-banner" class="hidden no-print bg-amber-500/15 border-b border-amber-500/40 px-4 py-2.5 text-xs">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div class="flex items-center gap-2 text-amber-300 font-semibold">
+          <i class="fa-solid fa-envelope-circle-check text-base"></i>
+          <span>تم إرسال رسالة تفعيل إلى بريدك الإلكتروني. يرجى فتح بريدك (Inbox أو Spam) والضغط على الرابط لتوثيق حسابك.</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" id="btn-check-verified" class="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold transition cursor-pointer">
+            لقد فعّلت البريد (تحديث)
+          </button>
+          <button type="button" id="btn-resend-verify" class="px-3 py-1 rounded-lg bg-navy-800 hover:bg-navy-700 text-amber-300 border border-navy-700 font-bold transition cursor-pointer">
+            إعادة إرسال الرابط
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Sticky Header -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-navy-700">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+        
+        <!-- Logo -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="w-10 h-10 rounded-xl bg-navy-900 border border-skybrand-500/40 flex items-center justify-center">
+            <svg class="w-7 h-7" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" stroke="#0284C7" stroke-width="3.5" fill="rgba(2,132,199,0.1)"/>
+              <rect x="20" y="26" width="7" height="22" rx="1" fill="#F8FAFC"/>
+              <rect x="29" y="18" width="8" height="30" rx="1" fill="#D97706"/>
+              <rect x="39" y="30" width="6" height="18" rx="1" fill="#38BDF8"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-extrabold text-base sm:text-lg text-white tracking-tight" dir="ltr">ChemBuild <span class="text-skybrand-400">Tech</span></span>
+              <span id="header-cloud-dot" title="حالة المزامنة السحابية" class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+            </div>
+            <p class="text-[11px] text-slate-400 hidden sm:block" dir="ltr">Materials Based Architecture</p>
+          </div>
+        </div>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden lg:flex items-center gap-1 bg-navy-900/90 p-1.5 rounded-xl border border-navy-700">
+          <button type="button" data-tab="library" class="main-nav-btn px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-skybrand-500 text-white transition cursor-pointer">
+            <i class="fa-solid fa-flask"></i>
+            <span data-i18n="library">المكتبة</span>
+          </button>
+          <button type="button" data-tab="compare" class="main-nav-btn px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-navy-800 transition cursor-pointer">
+            <i class="fa-solid fa-scale-balanced"></i>
+            <span data-i18n="compare">المقارنة</span>
+          </button>
+          <button type="button" data-tab="calculator" class="main-nav-btn px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-navy-800 transition cursor-pointer">
+            <i class="fa-solid fa-calculator"></i>
+            <span data-i18n="calculator">الحاسبة</span>
+          </button>
+          <button type="button" data-tab="mechanisms" class="main-nav-btn px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-navy-800 transition cursor-pointer">
+            <i class="fa-solid fa-atom"></i>
+            <span data-i18n="mechanisms">التفاعلات والاختبار</span>
+          </button>
+          <button type="button" data-tab="outline" class="main-nav-btn px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-navy-800 transition cursor-pointer">
+            <i class="fa-solid fa-person-chalkboard"></i>
+            <span data-i18n="outline">العرض والتقييم</span>
+          </button>
+          <button type="button" data-tab="lessons" class="main-nav-btn px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-navy-800 transition cursor-pointer"><i class="fa-solid fa-book-open"></i> <span data-i18n="lessons">الدروس</span></button>
+              <button type="button" data-tab="admin" id="nav-btn-admin" class="main-nav-btn px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 text-copper-400 hover:bg-copper-500/15 transition cursor-pointer">
+            <i class="fa-solid fa-sliders"></i>
+            <span>لوحة التحكم (Admin)</span>
+          </button>
+        </nav>
+
+        <!-- Actions: Print PDF + User Info + Logout -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" id="language-toggle" class="no-print px-3 py-2 rounded-xl bg-navy-800 hover:bg-navy-700 text-skybrand-300 border border-navy-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer" title="تغيير اللغة">
+            <i class="fa-solid fa-language"></i>
+            <span id="language-toggle-label">EN</span>
+          </button>
+          <button type="button" id="btn-print-pdf" title="تصدير ملخص PDF" class="no-print px-3 py-2 rounded-xl bg-copper-500/20 hover:bg-copper-500 text-copper-400 hover:text-white border border-copper-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span class="hidden xl:inline">PDF</span>
+          </button>
+
+          <div class="text-left hidden md:block border-r border-navy-700 pr-2.5">
+            <p id="user-display-name" class="text-xs font-bold text-white">ضيوف العرض</p>
+            <p id="user-display-role" class="text-[10px] text-skybrand-400">Live Presentation Mode</p>
+          </div>
+
+          <button type="button" id="btn-logout" title="تسجيل الخروج" class="no-print p-2.5 rounded-xl bg-navy-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-navy-700 transition cursor-pointer">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile/Tablet Sub-Navbar -->
+      <div class="lg:hidden flex items-center justify-around border-t border-navy-700 bg-navy-900/95 px-2 py-1.5 overflow-x-auto">
+        <button type="button" data-tab="library" class="mobile-nav-btn flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-skybrand-400 cursor-pointer">
+          <i class="fa-solid fa-flask text-sm"></i>
+          <span data-i18n="library">المكتبة</span>
+        </button>
+        <button type="button" data-tab="compare" class="mobile-nav-btn flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-slate-400 cursor-pointer">
+          <i class="fa-solid fa-scale-balanced text-sm"></i>
+          <span data-i18n="compare">المقارنة</span>
+        </button>
+        <button type="button" data-tab="calculator" class="mobile-nav-btn flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-slate-400 cursor-pointer">
+          <i class="fa-solid fa-calculator text-sm"></i>
+          <span data-i18n="calculator">الحاسبة</span>
+        </button>
+        <button type="button" data-tab="mechanisms" class="mobile-nav-btn flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-slate-400 cursor-pointer">
+          <i class="fa-solid fa-atom text-sm"></i>
+          <span data-i18n="mechanisms">الاختبار</span>
+        </button>
+        <button type="button" data-tab="outline" class="mobile-nav-btn flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-slate-400 cursor-pointer">
+          <i class="fa-solid fa-person-chalkboard text-sm"></i>
+          <span data-i18n="outline">التقييم</span>
+        </button>
+        <button type="button" data-tab="lessons" class="mobile-nav-btn flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-slate-400 cursor-pointer"><i class="fa-solid fa-book-open text-base"></i><span data-i18n="lessons">الدروس</span></button>
+          <button type="button" data-tab="admin" class="mobile-nav-btn flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-copper-400 cursor-pointer">
+          <i class="fa-solid fa-sliders text-sm"></i>
+          <span>Admin</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+      <!-- =================================================================
+           TAB 1: CHEMICAL MATERIALS LIBRARY
+           ================================================================= -->
+      <section id="section-library" class="tab-section space-y-6">
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-navy-700 relative overflow-hidden">
+          <div class="max-w-3xl relative z-10">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-skybrand-500/15 border border-skybrand-500/30 text-skybrand-400 text-xs font-bold mb-3">
+              <i class="fa-solid fa-dna"></i> قاعدة البيانات الكيميائية والإنشائية المعتمدة
+            </span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+              <span data-i18n="libraryTitle">المكتبة التفاعلية لمواد البناء الأساسية والفرعية</span>
+            </h2>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              <span data-i18n="libraryDescription">اضغط على أي مادة لاستعراض الصيغة الكيميائية، معادلات التفاعل، الخواص الفيزيائية والميكانيكية، الاستخدامات الإنشائية، وتحليل المميزات والعيوب.</span>
+            </p>
+          </div>
+          <div class="hidden lg:flex items-center justify-center absolute left-8 top-1/2 -translate-y-1/2 opacity-15 pointer-events-none">
+            <i class="fa-solid fa-cubes text-8xl text-skybrand-400"></i>
+          </div>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 no-print">
+          <div class="flex items-center gap-2 overflow-x-auto pb-1" id="category-filters">
+            <button type="button" data-cat="all" class="filter-pill whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold bg-skybrand-500 text-white shadow transition cursor-pointer">
+              <span data-i18n="allMaterials">الكل (12)</span>
+            </button>
+            <button type="button" data-cat="natural" class="filter-pill whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold bg-navy-800 text-slate-300 hover:text-white border border-navy-700 transition cursor-pointer">
+              مواد طبيعية (3)
+            </button>
+            <button type="button" data-cat="binders" class="filter-pill whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold bg-navy-800 text-slate-300 hover:text-white border border-navy-700 transition cursor-pointer">
+              روابط وبناء (4)
+            </button>
+            <button type="button" data-cat="metals" class="filter-pill whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold bg-navy-800 text-slate-300 hover:text-white border border-navy-700 transition cursor-pointer">
+              معادن وزجاج (2)
+            </button>
+            <button type="button" data-cat="modern" class="filter-pill whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold bg-navy-800 text-slate-300 hover:text-white border border-navy-700 transition cursor-pointer">
+              حديثة ومستدامة (3)
+            </button>
+          </div>
+
+          <div class="relative w-full lg:w-80">
+            <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="text" id="material-search" placeholder="ابحث بالاسم أو الصيغة (مثل CaCO3, أسمنت)..." class="w-full pr-10 pl-4 py-2 rounded-xl bg-navy-800 border border-navy-700 text-white text-xs focus:outline-none focus:border-skybrand-500 transition" />
+          </div>
+        </div>
+
+        <!-- Materials Grid -->
+        <div id="materials-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      </section>
+
+      <!-- =================================================================
+           TAB 2: ENGINEERING MATERIAL COMPARATOR
+           ================================================================= -->
+      <section id="section-compare" class="tab-section hidden space-y-6">
+        <div class="glass-panel rounded-3xl p-6 border border-navy-700">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-2xl font-extrabold text-white flex items-center gap-2.5">
+                <i class="fa-solid fa-scale-balanced text-copper-500"></i>
+                <span data-i18n="compareTitle">أداة المقارنة الهندسية والكيميائية</span>
+              </h2>
+              <p class="text-xs text-slate-300 mt-1">قارن بين مادتين جنباً إلى جنب لاتخاذ قرار الاختيار الأنسب حسب الأداء والاستدامة.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 no-print">
+              <button type="button" data-preset-a="cement" data-preset-b="geopolymer" class="preset-compare-btn px-3 py-1.5 rounded-lg bg-navy-900 hover:bg-navy-700 border border-skybrand-500/40 text-skybrand-400 text-xs font-bold transition cursor-pointer">
+                الأسمنت البورتلاندي vs الجيوبوليمري
+              </button>
+              <button type="button" data-preset-a="steel" data-preset-b="timber" class="preset-compare-btn px-3 py-1.5 rounded-lg bg-navy-900 hover:bg-navy-700 border border-copper-500/40 text-copper-400 text-xs font-bold transition cursor-pointer">
+                حديد التسليح vs الأخشاب
+              </button>
+              <button type="button" data-preset-a="concrete" data-preset-b="self_healing" class="preset-compare-btn px-3 py-1.5 rounded-lg bg-navy-900 hover:bg-navy-700 border border-emerald-500/40 text-emerald-400 text-xs font-bold transition cursor-pointer">
+                الخرسانة العادية vs ذاتية الالتئام
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div class="p-4 rounded-2xl bg-navy-900/90 border border-skybrand-500/40">
+              <label class="block text-xs font-bold text-skybrand-400 mb-2">المادة الأولى (A)</label>
+              <select id="compare-select-a" class="w-full p-2.5 rounded-xl bg-navy-800 border border-navy-700 text-white text-sm font-bold focus:outline-none focus:border-skybrand-500"></select>
+            </div>
+            <div class="p-4 rounded-2xl bg-navy-900/90 border border-copper-500/40">
+              <label class="block text-xs font-bold text-copper-400 mb-2">المادة الثانية (B)</label>
+              <select id="compare-select-b" class="w-full p-2.5 rounded-xl bg-navy-800 border border-navy-700 text-white text-sm font-bold focus:outline-none focus:border-copper-500"></select>
+            </div>
+          </div>
+
+          <div id="comparison-result" class="space-y-6"></div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           TAB 3: CONCRETE MIX & HYDRATION CALCULATOR
+           ================================================================= -->
+      <section id="section-calculator" class="tab-section hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Inputs -->
+          <div class="lg:col-span-5 glass-panel rounded-3xl p-6 border border-navy-700 space-y-5">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-copper-500/15 text-copper-400 text-xs font-bold mb-2">
+                <i class="fa-solid fa-flask-vial"></i> تطبيق عملي لكيمياء الإماهة (Hydration)
+              </span>
+              <h2 class="text-xl font-extrabold text-white">حاسبة تصميم الخلطة الخرسانية</h2>
+              <p class="text-xs text-slate-300 mt-1">احسب الكميات الدقيقة للمواد الخام وتأثير نسبة الماء إلى الأسمنت (w/c) على التفاعل الكيميائي والمقاومة.</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-200 mb-1.5">حجم الخرسانة المطلوب (متر مكعب - m³)</label>
+              <input type="number" id="calc-volume" value="10" min="0.5" max="5000" step="0.5" class="w-full px-4 py-2.5 rounded-xl bg-navy-900 border border-navy-700 text-white font-mono text-base font-bold focus:outline-none focus:border-skybrand-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-200 mb-1.5">رتبة الخرسانة ونسب الخلط الحجمية (أسمنت : رمل : ركام)</label>
+              <select id="calc-grade" class="w-full px-4 py-2.5 rounded-xl bg-navy-900 border border-navy-700 text-white text-sm font-bold focus:outline-none focus:border-skybrand-500">
+                <option value="M15">M15 (1 : 2 : 4) - خرسانة عادية وأساسات بسيطة</option>
+                <option value="M20" selected>M20 (1 : 1.5 : 3) - خرسانة مسلحة قياسية (بلاطات وأعمدة)</option>
+                <option value="M25">M25 (1 : 1 : 2) - منشآت عالية المقاومة</option>
+              </select>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-navy-900/90 border border-navy-700">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-bold text-skybrand-400">نسبة الماء إلى الأسمنت (w/c Ratio)</label>
+                <span id="wc-value-badge" class="px-2.5 py-0.5 rounded-lg bg-skybrand-500 text-white font-mono text-xs font-bold">0.48</span>
+              </div>
+              <input type="range" id="calc-wc" min="0.38" max="0.65" step="0.01" value="0.48" class="w-full my-2" />
+              <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                <span>0.38 (مقاومة عالية)</span>
+                <span>0.48 (مثالي)</span>
+                <span>0.65 (مسامية عالية)</span>
+              </div>
+              <p id="wc-chemical-note" class="text-xs text-slate-300 mt-3 pt-2.5 border-t border-navy-700 leading-relaxed"></p>
+            </div>
+          </div>
+
+          <!-- Outputs -->
+          <div class="lg:col-span-7 space-y-5">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+              <div class="glass-panel p-4 rounded-2xl border border-skybrand-500/40 text-center">
+                <i class="fa-solid fa-cubes-stacked text-skybrand-400 text-xl mb-2"></i>
+                <p class="text-[11px] text-slate-400">الأسمنت البورتلاندي</p>
+                <p id="res-cement-kg" class="text-lg font-extrabold text-white font-mono mt-0.5">0 kg</p>
+                <p id="res-cement-bags" class="text-xs font-bold text-skybrand-400 mt-0.5">0 شيكارة</p>
+              </div>
+
+              <div class="glass-panel p-4 rounded-2xl border border-copper-500/40 text-center">
+                <i class="fa-solid fa-mound text-copper-400 text-xl mb-2"></i>
+                <p class="text-[11px] text-slate-400">الرمال (SiO₂)</p>
+                <p id="res-sand" class="text-lg font-extrabold text-white font-mono mt-0.5">0.00 m³</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">ركام ناعم</p>
+              </div>
+
+              <div class="glass-panel p-4 rounded-2xl border border-slate-500/40 text-center">
+                <i class="fa-solid fa-hill-rockslide text-slate-300 text-xl mb-2"></i>
+                <p class="text-[11px] text-slate-400">الزلط / السن</p>
+                <p id="res-aggregate" class="text-lg font-extrabold text-white font-mono mt-0.5">0.00 m³</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">ركام كبير</p>
+              </div>
+
+              <div class="glass-panel p-4 rounded-2xl border border-cyan-500/40 text-center">
+                <i class="fa-solid fa-droplet text-cyan-400 text-xl mb-2"></i>
+                <p class="text-[11px] text-slate-400">ماء الإماهة (H₂O)</p>
+                <p id="res-water" class="text-lg font-extrabold text-white font-mono mt-0.5">0 L</p>
+                <p class="text-[11px] text-cyan-400 mt-0.5">للتفاعل الكيميائي</p>
+              </div>
+            </div>
+
+            <div class="glass-panel rounded-3xl p-6 border border-navy-700 space-y-4">
+              <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                <i class="fa-solid fa-leaf text-emerald-400"></i>
+                <span>التحليل البيئي والكيميائي للخلطة (CO₂ Footprint)</span>
+              </h3>
+              
+              <div class="p-4 rounded-2xl bg-navy-900/90 border border-navy-700 space-y-2">
+                <p class="text-xs font-bold text-skybrand-400">معادلة تفاعل الإماهة الأساسية (Hydration of Alite):</p>
+                <p class="formula-badge text-xs sm:text-sm text-white bg-navy-950 p-3 rounded-xl border border-navy-700 text-center">
+                  2(3CaO·SiO₂) + 6H₂O → 3CaO·2SiO₂·3H₂O (C-S-H Gel) + 3Ca(OH)₂
+                </p>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  يتكون جل سيليكات الكالسيوم المائية <span class="formula-badge text-skybrand-400 font-bold">(C-S-H)</span> المسؤول عن التماسك والصلابة، بينما ينتج هيدروكسيد الكالسيوم <span class="formula-badge text-copper-400 font-bold">Ca(OH)₂</span> الذي يحافظ على قلوية الخرسانة (pH ≈ 12.5) لحماية حديد التسليح من الصدأ.
+                </p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <div class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <p class="text-xs font-bold text-red-400">انبعاثات CO₂ (الأسمنت البورتلاندي التقليدي)</p>
+                  <p id="res-co2-opc" class="text-2xl font-extrabold text-white font-mono mt-1">0 kg CO₂</p>
+                  <p class="text-[11px] text-slate-300 mt-1">ناتج عن تفكك الحجر الجيري CaCO₃ → CaO + CO₂</p>
+                </div>
+                <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+                  <p class="text-xs font-bold text-emerald-400">الوفرة مع الأسمنت الجيوبوليمري الأخضر</p>
+                  <p id="res-co2-saved" class="text-2xl font-extrabold text-emerald-400 font-mono mt-1">-0 kg CO₂</p>
+                  <p class="text-[11px] text-slate-300 mt-1">تقليل الانبعاثات بنسبة تصل إلى 80% باستخدام الرماد المتطاير</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           TAB 4: CHEMICAL MECHANISMS & INTERACTIVE QUIZ
+           ================================================================= -->
+      <section id="section-mechanisms" class="tab-section hidden space-y-6">
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-navy-700 space-y-5">
+          <div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-skybrand-500/15 text-skybrand-400 text-xs font-bold mb-2">
+              <i class="fa-solid fa-microscope"></i> الآليات الجزيئية الحاكمة في التشييد
+            </span>
+            <h2 class="text-2xl font-extrabold text-white">أهم التفاعلات الكيميائية في مواد البناء</h2>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div class="p-5 rounded-2xl bg-navy-900/90 border border-skybrand-500/35 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-lg bg-skybrand-500/20 text-skybrand-400 text-xs font-bold">1. إماهة الأسمنت</span>
+                <i class="fa-solid fa-droplet text-skybrand-400"></i>
+              </div>
+              <h3 class="font-bold text-white text-base">تكوّن جل سيليكات الكالسيوم (C-S-H)</h3>
+              <div class="formula-badge text-xs bg-navy-950 p-3 rounded-xl border border-navy-700 text-emerald-400">
+                2C₃S + 6H₂O → C₃S₂H₃ + 3Ca(OH)₂
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                يتفاعل مركب الأليت (C₃S) مع الماء مكوناً شبكة إبرية متداخلة من جل (C-S-H) تمنح الخرسانة 70% من مقاومتها المبكرة خلال أول 7 أيام.
+              </p>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-navy-900/90 border border-red-500/35 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-400 text-xs font-bold">2. صدأ حديد التسليح</span>
+                <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
+              </div>
+              <h3 class="font-bold text-white text-base">التآكل الكهروكيميائي (Electrochemical)</h3>
+              <div class="formula-badge text-xs bg-navy-950 p-3 rounded-xl border border-navy-700 text-amber-400 space-y-1">
+                <div>Anode: Fe → Fe²⁺ + 2e⁻</div>
+                <div>Cathode: O₂ + 2H₂O + 4e⁻ → 4OH⁻</div>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                عند اختراق الكلوريدات (Cl⁻) أو انخفاض القلوية بسبب الكربنة، تتفكك طبقة الحماية ويتكون الصدأ (Fe₂O₃·nH₂O) الذي يتمدد 6 أضعاف حجمه مسبباً تشقق الخرسانة.
+              </p>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-navy-900/90 border border-emerald-500/35 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-bold">3. الأسمنت الأخضر</span>
+                <i class="fa-solid fa-leaf text-emerald-400"></i>
+              </div>
+              <h3 class="font-bold text-white text-base">البلمرة الجيوبوليمرية (Geopolymer)</h3>
+              <div class="formula-badge text-xs bg-navy-950 p-3 rounded-xl border border-navy-700 text-skybrand-400">
+                (Si₂O₅, Al₂O₂)ₙ + H₂O + OH⁻ → -(Si-O-Al-O)ₙ-
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                بدلاً من حرق الحجر الجيري، يتم تنشيط الرماد المتطاير الغني بالسيليكا والألومينا بمحلول قلوي لتكوين سلاسل بوليمرية غير عضوية فائقة المتانة ومقاومة للأحماض.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Chemistry Check Quiz -->
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-navy-700">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-copper-500/15 text-copper-400 text-xs font-bold mb-2">
+                <i class="fa-solid fa-circle-question"></i> Quick Chemistry Check
+              </span>
+              <h2 class="text-2xl font-extrabold text-white">اختبر معلوماتك في كيمياء مواد البناء</h2>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="quiz-score-badge" class="px-4 py-2 rounded-xl bg-navy-900 border border-skybrand-500/40 text-skybrand-400 font-bold text-xs">
+                النتيجة: 0 / 6
+              </span>
+              <button type="button" id="btn-reset-quiz" class="px-3.5 py-2 rounded-xl bg-navy-800 hover:bg-navy-700 text-slate-300 text-xs font-bold border border-navy-700 transition cursor-pointer">
+                إعادة الاختبار
+              </button>
+            </div>
+          </div>
+
+          <div id="quiz-container" class="space-y-4"></div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           TAB 5: 13-SLIDE OUTLINE & LIVE EVALUATION BOARD
+           ================================================================= -->
+      <section id="section-outline" class="tab-section hidden space-y-6">
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-navy-700">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-skybrand-500/15 text-skybrand-400 text-xs font-bold mb-2">
+                <i class="fa-solid fa-sitemap"></i> الهيكل العلمي المعتمد للعرض التقديمي (13 شريحة)
+              </span>
+              <h2 class="text-2xl font-extrabold text-white">خريطة شرائح مشروع ChemBuild Tech</h2>
+              <p class="text-xs text-slate-300 mt-1">متزامنة مع عرض PowerPoint لتسهيل التنقل السريع أثناء المناقشة مع دكتورة المادة.</p>
+            </div>
+          </div>
+
+          <div id="slides-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <!-- Live Evaluation & Feedback Board -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Submit Feedback Form -->
+          <div class="lg:col-span-5 glass-panel rounded-3xl p-6 border border-navy-700 space-y-4">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-copper-500/15 text-copper-400 text-xs font-bold mb-2">
+                <i class="fa-solid fa-star"></i> تقييم دكتورة المادة وطلاب الدفعة
+              </span>
+              <h3 class="text-xl font-extrabold text-white">شاركنا تقييمك وملاحظاتك للمشروع</h3>
+              <p class="text-xs text-slate-300 mt-1">تُحفظ المشاركات مباشرة في قاعدة بيانات المشروع السحابية وتُعرض في لوحة التقييم.</p>
+            </div>
+
+            <form id="feedback-form" class="space-y-3.5">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">الاسم</label>
+                <input type="text" id="fb-name" required placeholder="اكتب اسمك الكريم هنا..." class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900 border border-navy-700 text-white text-xs focus:outline-none focus:border-skybrand-500" />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-300 mb-1">الصفة</label>
+                  <select id="fb-role" class="w-full px-3 py-2.5 rounded-xl bg-navy-900 border border-navy-700 text-white text-xs focus:outline-none focus:border-skybrand-500">
+                    <option value="دكتورة المادة">دكتورة المادة</option>
+                    <option value="طالب / طالبة بالدفعة">طالب / طالبة بالدفعة</option>
+                    <option value="معيد / لجنة تحكيم">معيد / لجنة تحكيم</option>
+                    <option value="فريق ChemBuild Tech">فريق ChemBuild Tech</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-300 mb-1">التقييم (من 5)</label>
+                  <select id="fb-rating" class="w-full px-3 py-2.5 rounded-xl bg-navy-900 border border-navy-700 text-copper-400 font-bold text-xs focus:outline-none focus:border-skybrand-500">
+                    <option value="5">★★★★★ (5/5 ممتاز)</option>
+                    <option value="4">★★★★☆ (4/5 جيد جداً)</option>
+                    <option value="3">★★★☆☆ (3/5 جيد)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">الملاحظات العلمية والتقنية</label>
+                <textarea id="fb-comment" rows="3" required placeholder="اكتب رأيك في المحتوى الكيميائي والتطبيق الهندسي..." class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900 border border-navy-700 text-white text-xs focus:outline-none focus:border-skybrand-500"></textarea>
+              </div>
+
+              <button type="submit" id="fb-submit-btn" class="w-full py-3 rounded-xl bg-copper-500 hover:bg-copper-600 text-white font-bold text-xs shadow-lg shadow-copper-500/20 transition flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>نشر التقييم في اللوحة</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Feedback Feed -->
+          <div class="lg:col-span-7 glass-panel rounded-3xl p-6 border border-navy-700 flex flex-col justify-between space-y-4">
+            <div class="flex items-center justify-between border-b border-navy-700 pb-3">
+              <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                <i class="fa-solid fa-comments text-skybrand-400"></i>
+                <span>رسائل فريق ChemBuild Tech وسجل التقييمات المعتمدة</span>
+              </h3>
+              <span id="avg-rating-badge" class="px-3 py-1 rounded-full bg-copper-500/20 text-copper-400 font-bold text-xs">
+                التقييم العام: 5.0 / 5
+              </span>
+            </div>
+
+            <div id="feedback-list" class="space-y-3 max-h-96 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           TAB 6: ADMIN CONTROL DASHBOARD (MODERATION, USERS & DATA EXPORT)
+           ================================================================= -->
+      <section id="section-lessons" class="tab-section hidden space-y-6">
+        <div class="glass-panel rounded-2xl p-6">
+          <h2 class="text-2xl font-extrabold text-white">دروس المادة</h2>
+          <p class="text-slate-400 text-sm mt-1">Course lessons · مواد البناء وكيمياؤها</p>
+        </div>
+        <div id="lessons-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        <div class="glass-panel rounded-2xl p-5 space-y-3">
+          <h3 class="font-bold text-white">المساعد الذكي</h3>
+          <div class="flex gap-2 flex-wrap">
+            <select id="lesson-summary-select" class="bg-navy-900 border border-navy-700 rounded-lg px-3 py-2 text-sm text-white"></select>
+            <button type="button" id="btn-lesson-summary" class="px-4 py-2 rounded-lg bg-skybrand-500 text-white text-sm font-bold">لخّص الدرس</button>
+          </div>
+          <div class="flex gap-2">
+            <input id="ai-question" type="text" maxlength="1000" placeholder="اسأل عن أي حاجة في المادة..." class="flex-1 bg-navy-900 border border-navy-700 rounded-lg px-3 py-2 text-sm text-white" />
+            <button type="button" id="btn-ai-ask" class="px-4 py-2 rounded-lg bg-copper-500 text-white text-sm font-bold">اسأل</button>
+          </div>
+          <div id="ai-answer" class="text-sm text-slate-200 bg-navy-900 rounded-lg p-3" style="white-space:pre-wrap;min-height:3rem"></div>
+        </div>
+      </section>
+      <section id="section-admin" class="tab-section hidden space-y-6">
+        
+        <!-- Admin Lock Gate (Shown if Admin hasn't unlocked yet) -->
+        <div id="admin-lock-gate" class="glass-panel rounded-3xl p-8 max-w-md mx-auto border border-copper-500/40 text-center space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-copper-500/15 border border-copper-500/40 text-copper-400 flex items-center justify-center mx-auto text-2xl">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <h2 class="text-xl font-extrabold text-white">لوحة تحكم فريق ChemBuild Tech</h2>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            هذه اللوحة مخصصة لقائد وفريق المشروع للتحكم في التعليقات المعروضة، مراجعة الحسابات المسجلة، وتصدير البيانات. أدخل رمز المشرف (PIN) للمتابعة:
+          </p>
+          <form id="admin-pin-form" class="space-y-3">
+            <input type="password" id="admin-pin-input" required placeholder="أدخل رمز المشرف (الافتراضي: 2026)" dir="ltr" class="w-full px-4 py-2.5 rounded-xl bg-navy-900 border border-navy-700 text-white text-center font-mono text-base tracking-widest focus:outline-none focus:border-copper-500" />
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-copper-500 hover:bg-copper-600 text-white font-bold text-xs transition cursor-pointer">
+              فتح لوحة التحكم
+            </button>
+          </form>
+        </div>
+
+        <!-- Unlocked Admin Dashboard -->
+        <div id="admin-dashboard-content" class="hidden space-y-6">
+          
+          <!-- Header & Export Actions -->
+          <div class="glass-panel rounded-3xl p-6 border border-copper-500/40 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-copper-500/20 text-copper-400 text-xs font-bold mb-2">
+                <i class="fa-solid fa-crown"></i> مركز التحكم والبيانات السحابية (Admin Console)
+              </span>
+              <h2 class="text-2xl font-extrabold text-white">إدارة التعليقات والأعضاء وقاعدة البيانات</h2>
+              <p class="text-xs text-slate-300 mt-1">تحكم في كل تعليق يظهر للزوار، راقب حسابات المسجلين وحالة تفعيل البريد، وصدّر تقارير Excel/CSV.</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button type="button" id="btn-export-feedbacks-csv" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>تصدير التقييمات (CSV)</span>
+              </button>
+              <button type="button" id="btn-export-users-csv" class="px-3.5 py-2 rounded-xl bg-skybrand-500/20 hover:bg-skybrand-500 text-skybrand-300 hover:text-white border border-skybrand-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-users-viewfinder"></i>
+                <span>تصدير الأعضاء (CSV)</span>
+              </button>
+              <button type="button" id="btn-lock-admin" class="px-3 py-2 rounded-xl bg-navy-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-navy-700 text-xs font-bold transition cursor-pointer">
+                <i class="fa-solid fa-lock"></i> قفل
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass-panel p-4 rounded-2xl border border-navy-700">
+              <p class="text-xs text-slate-400">إجمالي الأعضاء المسجلين</p>
+              <p id="admin-stat-users" class="text-2xl font-extrabold text-white font-mono mt-1">0</p>
+              <p class="text-[11px] text-skybrand-400 mt-0.5">محفوظة في Firestore</p>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl border border-navy-700">
+              <p class="text-xs text-slate-400">التعليقات الظاهرة للجمهور</p>
+              <p id="admin-stat-approved" class="text-2xl font-extrabold text-emerald-400 font-mono mt-1">0</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">منشورة في لوحة التقييم</p>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl border border-navy-700">
+              <p class="text-xs text-slate-400">تعليقات مخفية / بانتظار المراجعة</p>
+              <p id="admin-stat-hidden" class="text-2xl font-extrabold text-amber-400 font-mono mt-1">0</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">لا تظهر للزوار حتى توافق</p>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl border border-navy-700">
+              <p class="text-xs text-slate-400">متوسط التقييم العام</p>
+              <p id="admin-stat-avg" class="text-2xl font-extrabold text-copper-400 font-mono mt-1">5.0 / 5</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">من تقييمات اللوحة</p>
+            </div>
+          </div>
+
+          <!-- Moderation Policy Toggle -->
+          <div class="glass-panel rounded-2xl p-5 border border-navy-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-sm font-extrabold text-white flex items-center gap-2">
+                <i class="fa-solid fa-shield-cat text-skybrand-400"></i>
+                <span>سياسة نشر التعليقات الجديدة (Moderation Mode)</span>
+              </h3>
+              <p class="text-xs text-slate-300 mt-0.5">
+                اختر بين النشر الفوري المباشر أثناء العرض في القاعة، أو حجز التعليقات الجديدة للمراجعة أولاً قبل ظهورها للجميع.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 bg-navy-950 p-1.5 rounded-xl border border-navy-700 shrink-0">
+              <button type="button" id="btn-mode-auto" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-white transition cursor-pointer">
+                نشر فوري مباشر
+              </button>
+              <button type="button" id="btn-mode-manual" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer">
+                مراجعة قبل النشر
+              </button>
+            </div>
+          </div>
+
+          <!-- Comments Moderation Table -->
+          <div class="glass-panel rounded-3xl p-6 border border-navy-700 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-copper-400"></i>
+                <span>التحكم الكامل في التعليقات والتقييمات</span>
+              </h3>
+              <span class="text-xs text-slate-400">يمكنك إظهار أو إخفاء أو حذف أي تعليق بضغطة زر</span>
+            </div>
+            <div id="admin-comments-list" class="space-y-3"></div>
+          </div>
+
+          <!-- Registered Users Table -->
+          <div class="glass-panel rounded-3xl p-6 border border-navy-700 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                <i class="fa-solid fa-users text-skybrand-400"></i>
+                <span>سجل الحسابات المسجلة وحالة تفعيل البريد</span>
+              </h3>
+              <span class="text-xs text-slate-400">تُحفظ تلقائياً عند إنشاء كل حساب جديد</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-right text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-navy-700 text-slate-400">
+                    <th class="py-3 px-3">الاسم</th>
+                    <th class="py-3 px-3">البريد الإلكتروني</th>
+                    <th class="py-3 px-3">الصفة</th>
+                    <th class="py-3 px-3">حالة التفعيل</th>
+                    <th class="py-3 px-3">إجراء</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-tbody" class="divide-y divide-navy-800 text-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-navy-800 bg-navy-950/85 py-4 px-4 text-center text-xs text-slate-400">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+        <p>تطوير وتنفيذ فريق <span class="text-white font-bold">ChemBuild Tech</span> — كيمياء مواد البناء الأساسية والفرعية</p>
+        <p class="font-mono text-skybrand-400" dir="ltr">Materials Based Architecture • Firebase Cloud Edition</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- =====================================================================
+       3. MATERIAL SCIENTIFIC DETAIL MODAL
+       ===================================================================== -->
+  <div id="material-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-navy-950/85 backdrop-blur-md">
+    <div class="glass-panel w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl border border-navy-700 shadow-2xl p-6 sm:p-8 relative">
+      <button type="button" id="btn-close-modal" class="absolute top-5 left-5 w-9 h-9 rounded-xl bg-navy-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 flex items-center justify-center border border-navy-700 transition cursor-pointer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div id="modal-body-content" class="space-y-6"></div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       FIREBASE + FULL APPLICATION LOGIC (MODULAR ES SCRIPT)
+       ===================================================================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signInAnonymously,
+      sendEmailVerification,
+      sendPasswordResetEmail,
+      updateProfile,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      setDoc,
+      getDoc,
+      doc,
+      updateDoc,
+      deleteDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const translations = {
+      ar: {
+        library: "المكتبة", compare: "المقارنة", calculator: "الحاسبة",
+        mechanisms: "التفاعلات والاختبار", outline: "العرض والتقييم", lessons: "الدروس",
+        adminLogin: "دخول المشرف (Admin)", liveDemo: "دخول المتخصص / العرض",
+        login: "تسجيل الدخول", signup: "إنشاء حساب جديد",
+        libraryTitle: "المكتبة التفاعلية لمواد البناء الأساسية والفرعية",
+        libraryDescription: "اضغط على أي مادة لاستعراض الصيغة الكيميائية، معادلات التفاعل، الخواص الفيزيائية والميكانيكية، الاستخدامات الإنشائية، وتحليل المميزات والعيوب.",
+        allMaterials: "الكل (12)",
+        compareTitle: "أداة المقارنة الهندسية والكيميائية",
+        switchToEnglish: "تغيير اللغة إلى الإنجليزية"
+      },
+      en: {
+        library: "Library", compare: "Compare", calculator: "Calculator",
+        mechanisms: "Reactions & Tests", outline: "Presentation & Evaluation", lessons: "Lessons",
+        adminLogin: "Admin Login", liveDemo: "Expert / Presentation",
+        login: "Sign In", signup: "Create Account",
+        libraryTitle: "Interactive Library of Essential and Secondary Construction Materials",
+        libraryDescription: "Select any material to view its chemical formula, reactions, physical and mechanical properties, structural uses, and advantages and disadvantages.",
+        allMaterials: "All (12)",
+        compareTitle: "Engineering and Chemical Comparison Tool",
+        switchToEnglish: "Switch language to English"
+      }
+    };
+
+    let currentLanguage = localStorage.getItem("chembuild-language") || "ar";
+
+    function applyLanguage(language) {
+      currentLanguage = language === "en" ? "en" : "ar";
+      document.documentElement.lang = currentLanguage;
+      document.documentElement.dir = currentLanguage === "ar" ? "rtl" : "ltr";
+
+      document.querySelectorAll("[data-i18n]").forEach((element) => {
+        const key = element.dataset.i18n;
+        if (translations[currentLanguage][key]) {
+          element.textContent = translations[currentLanguage][key];
+        }
+      });
+
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+        const key = element.dataset.i18nPlaceholder;
+        if (translations[currentLanguage][key]) {
+          element.placeholder = translations[currentLanguage][key];
+        }
+      });
+
+      const toggleLabel = document.getElementById("language-toggle-label");
+      const toggleButton = document.getElementById("language-toggle");
+      if (toggleLabel) toggleLabel.textContent = currentLanguage === "ar" ? "EN" : "AR";
+      if (toggleButton) {
+        toggleButton.title = currentLanguage === "ar"
+          ? translations.ar.switchToEnglish
+          : "Switch language to Arabic";
+      }
+
+      localStorage.setItem("chembuild-language", currentLanguage);
+      document.dispatchEvent(new CustomEvent("languageChanged", { detail: { language: currentLanguage } }));
+    }
+
+    const languageToggle = document.getElementById("language-toggle");
+    if (languageToggle) {
+      languageToggle.addEventListener("click", () => {
+        applyLanguage(currentLanguage === "ar" ? "en" : "ar");
+      });
+    }
+
+    applyLanguage(currentLanguage);
+
+    // =========================================================================
+    // 1. إعدادات فايربيس (FIREBASE CONFIG)
+    // =========================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyA0HvOH49DyOvPnGoZh2n6LelJ1fZZhIVI",
+      authDomain: "chembuild-tech.firebaseapp.com",
+      projectId: "chembuild-tech",
+      storageBucket: "chembuild-tech.firebasestorage.app",
+      messagingSenderId: "447642380966",
+      appId: "1:447642380966:web:183ecdafb7dfb334b5fa1f",
+      measurementId: "G-CHGK65Z0MQ"
+    };
+
+    // بريد المشرف العام لفتح لوحة التحكم تلقائياً عند الدخول به
+    const ADMIN_EMAILS = ["admin@chembuild.tech"];
+    // رمز PIN سريع لفتح لوحة التحكم من أي جهاز أثناء العرض المباشر
+    const ADMIN_PIN = "2027";
+
+    // =========================================================================
+    // INITIALIZE FIREBASE (WITH AUTOMATIC LOCAL FALLBACK)
+    // =========================================================================
+    const isFirebaseConfigured = Boolean(
+      firebaseConfig.apiKey &&
+      !firebaseConfig.apiKey.includes("YOUR_API_KEY") &&
+      firebaseConfig.projectId &&
+      !firebaseConfig.projectId.includes("YOUR_PROJECT_ID")
+    );
+
+    let app = null;
+    let auth = null;
+    let db = null;
+
+    if (isFirebaseConfigured) {
+      try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+      } catch (err) {
+        console.error("Firebase init error:", err);
+      }
+    }
+
+    // Update Cloud Status UI
+    const statusBadge = document.getElementById("firebase-status-badge");
+    const headerCloudDot = document.getElementById("header-cloud-dot");
+    function setCloudStatus(state) {
+      if (state === "connected") {
+        statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
+        statusBadge.innerHTML = `<i class="fa-solid fa-cloud-check"></i><span>متصل بسحابة Firebase Live</span>`;
+        headerCloudDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block";
+        headerCloudDot.title = "متصل بسحابة Firebase";
+      } else if (state === "rules_restricted") {
+        statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30";
+        statusBadge.innerHTML = `<i class="fa-solid fa-shield-halved"></i><span>متصل بـ Firebase (يرجى نشر قواعد Firestore Rules)</span>`;
+        headerCloudDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 inline-block";
+        headerCloudDot.title = "بانتظار نشر قواعد Firestore Rules";
+      } else {
+        statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30";
+        statusBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>وضع المعاينة المحلي</span>`;
+        headerCloudDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 inline-block";
+        headerCloudDot.title = "وضع المعاينة المحلي";
+      }
+    }
+    setCloudStatus(isFirebaseConfigured && db ? "connected" : "local");
+
+    // =========================================================================
+    // SCIENTIFIC DATABASE OF 12 BUILDING MATERIALS
+    // =========================================================================
+    const materialsDB = [
+      {
+        id: 'limestone',
+        nameAr: 'الأحجار الجيرية والرخام',
+        nameEn: 'Limestone & Marble',
+        category: 'natural',
+        categoryLabel: 'مواد طبيعية',
+        formula: 'CaCO₃',
+        icon: 'fa-mountain',
+        accent: 'sky',
+        summary: 'صخور رسوبية ومتحولة تتكون أساساً من كربونات الكالسيوم، وتعد حجر الأساس في التشييد وصناعة الأسمنت.',
+        chemicalDetails: 'يتكون الحجر الجيري من معدن الكالسيت (CaCO₃). عند التسخين إلى 900°C يحدث له تكليس حراري: CaCO₃ → CaO + CO₂. ويتفاعل بسهولة مع الأحماض المخففة مسبباً تآكل الواجهات في المناطق الصناعية (الأمطار الحمضية).',
+        properties: {
+          physical: 'الكثافة: 2.5 - 2.7 g/cm³ | مسامية منخفضة في الرخام ومتوسطة في الحجر الجيري.',
+          mechanical: 'مقاومة ضغط عالية (60 - 150 MPa) ولكن مقاومة شد وانحناء ضعيفة.',
+          thermal: 'توصيل حراري متوسط (1.3 - 2.2 W/m·K) وسعة حرارية عالية تحافظ على اعتدال المباني.'
+        },
+        uses: 'الواجهات المعمارية، الأرضيات، الدرج، وإنتاج الكلنكر الأسمنتي والجير الحي.',
+        pros: ['مقاومة ضغط ممتازة وديمومة طويلة', 'مظهر جمالي طبيعي فاخر', 'متوفر محلياً بكثرة'],
+        cons: ['ثقيل الوزن مما يزيد الأحمال الميتة', 'يتأثر بالأمطار الحمضية (تفاعل الكربونات مع H₂SO₄)', 'صعوبة التشكيل مقارنة بالخرسانة'],
+        metrics: { compressive: 75, tensile: 20, thermalInsulation: 55, costEfficiency: 70, sustainability: 75 }
+      },
+      {
+        id: 'timber',
+        nameAr: 'الأخشاب الإنشائية',
+        nameEn: 'Structural Timber',
+        category: 'natural',
+        categoryLabel: 'مواد طبيعية',
+        formula: '(C₆H₁₀O₅)ₙ + Lignin',
+        icon: 'fa-tree',
+        accent: 'copper',
+        summary: 'مادة عضوية طبيعية مركبة من ألياف السليلوز المتماسكة بمادة اللجنين البوليمرية.',
+        chemicalDetails: 'يتكون الخشب كيميائياً من ~50% سليلوز (C₆H₁₀O₅)ₙ المسؤول عن مقاومة الشد، و~25% هيميسليلوز، و~25% لجنين (بوليمر عطري معقد يعطي الصلابة ومقاومة الانضغاط).',
+        properties: {
+          physical: 'كثافة منخفضة (0.4 - 0.8 g/cm³)؛ مادة استرطابية (تمتص الرطوبة وتنكمش).',
+          mechanical: 'نسبة مقاومة إلى وزن ممتازة؛ يقاوم الشد والضغط بالتوازي مع الألياف.',
+          thermal: 'عازل حراري طبيعي ممتاز (0.12 - 0.16 W/m·K).'
+        },
+        uses: 'الأسقف المائلة، الجمالونات الخشبية، الأرضيات، القوالب (الشدات الخشبية)، والعمارة البيئية.',
+        pros: ['خفيف الوزن وسهل التشكيل والقطع', 'عازل حراري وصوتي ممتاز', 'مادة متجددة وتخزن الكربون'],
+        cons: ['قابل للاشتعال والاحتراق', 'يتعرض للتعفن الفطري والنمل الأبيض في الرطوبة', 'تغير الأبعاد مع تغير الرطوبة'],
+        metrics: { compressive: 45, tensile: 65, thermalInsulation: 90, costEfficiency: 65, sustainability: 88 }
+      },
+      {
+        id: 'sand',
+        nameAr: 'الرمال والركام السيليسي',
+        nameEn: 'Silica Sand & Aggregates',
+        category: 'natural',
+        categoryLabel: 'مواد طبيعية',
+        formula: 'SiO₂ (Quartz)',
+        icon: 'fa-mound',
+        accent: 'sky',
+        summary: 'حبيبات معدنية خاملة كيميائياً تمثل 70% إلى 80% من حجم الخرسانة والمونة.',
+        chemicalDetails: 'يتكون الرمل الطبيعي النقي من ثاني أكسيد السيليكون البلوري (الكوارتز SiO₂) بترتيب رباعي الأوجه (SiO₄) شديد الاستقرار الكيميائي، مما يمنع تفاعله الضار مع قلويات الأسمنت.',
+        properties: {
+          physical: 'الوزن النوعي: 2.65 | تدرج حبيبي يقلل الفراغات البينية.',
+          mechanical: 'صلادة عالية (7 على مقياس موهس) تقاوم البري والاحتكاك.',
+          thermal: 'ثبات حراري عالٍ جداً (ينصهر عند 1713°C).'
+        },
+        uses: 'المكون الحجمي الأكبر في الخرسانة، مونة المحارة والبناء، وصناعة الزجاج المعماري.',
+        pros: ['خامل كيميائياً ويمنع انكماش الخرسانة', 'رخيص ومتوفر بكثرة في الطبيعة', 'يرفع مقاومة التآكل والاحتكاك'],
+        cons: ['وجود أملاح الكلوريدات والكبريتات به يدمر حديد التسليح', 'الاستخراج الجائر يؤثر على البيئة النهرية'],
+        metrics: { compressive: 80, tensile: 10, thermalInsulation: 45, costEfficiency: 95, sustainability: 70 }
+      },
+      {
+        id: 'cement',
+        nameAr: 'الأسمنت البورتلاندي العادي',
+        nameEn: 'Ordinary Portland Cement (OPC)',
+        category: 'binders',
+        categoryLabel: 'مواد مصنعة - روابط وبناء',
+        formula: 'C₃S · C₂S · C₃A · C₄AF',
+        icon: 'fa-cubes-stacked',
+        accent: 'sky',
+        summary: 'المادة الرابطة الهيدروليكية الأساسية في العصر الحديث، تتصلب بالتفاعل الكيميائي مع الماء.',
+        chemicalDetails: 'يتكون الكلنكر من 4 أطوار رئيسية: أليت (3CaO·SiO₂ - C₃S) للمقاومة المبكرة، بيليت (2CaO·SiO₂ - C₂S) للمقاومة المتأخرة، ألومينات ثلاثي الكالسيوم (C₃A)، وفيريت ألومينات رباعي الكالسيوم (C₄AF)، مع إضافة الجبس (CaSO₄·2H₂O) لتنظيم زمن الشك.',
+        properties: {
+          physical: 'نعومة عالية (مساحة سطحية ~3200 cm²/g)؛ وزن نوعي 3.15.',
+          mechanical: 'مقاومة ضغط عالية عند التصلب (32.5 إلى 52.5 MPa).',
+          thermal: 'تفاعل الإماهة طارد للحرارة (Exothermic) مما قد يسبب شروخاً حرارية في الكتل الضخمة.'
+        },
+        uses: 'إنتاج الخرسانة العادية والمسلحة، المونة الأسمنتية، والبلاطات مسبقة الصب.',
+        pros: ['قوة تماسك ومقاومة ضغط عالية جداً', 'يتصلب تحت الماء (رابط هيدروليكي)', 'سهولة الصب والتشكيل في أي قالب'],
+        cons: ['مسؤول عن ~8% من انبعاثات CO₂ العالمية أثناء التصنيع', 'انكماش جفاف يسبب شروخاً شعرية', 'يتأثر بهجوم الكبريتات والكلوريدات'],
+        metrics: { compressive: 85, tensile: 18, thermalInsulation: 40, costEfficiency: 85, sustainability: 30 }
+      },
+      {
+        id: 'lime',
+        nameAr: 'الجير الحي والمطفأ',
+        nameEn: 'Quicklime & Slaked Lime',
+        category: 'binders',
+        categoryLabel: 'مواد مصنعة - روابط وبناء',
+        formula: 'CaO → Ca(OH)₂',
+        icon: 'fa-fire-burner',
+        accent: 'copper',
+        summary: 'أقدم مادة رابطة هوائية في التاريخ، تتصلب بامتصاص ثاني أكسيد الكربون من الجو.',
+        chemicalDetails: 'ينتج الجير الحي (CaO) بحرق الحجر الجيري، ثم يُطفأ بالماء في تفاعل طارد للحرارة: CaO + H₂O → Ca(OH)₂. ويتصلب في البناء عبر دورة الكربنة: Ca(OH)₂ + CO₂ → CaCO₃ + H₂O.',
+        properties: {
+          physical: 'مسحوق أبيض ناعم، عالي اللدونة وقابلية التشغيل والتهوية (نفاذية بخار الماء).',
+          mechanical: 'مقاومة ضغط منخفضة إلى متوسطة (2 - 8 MPa) ولكن بمرونة تمنع التشقق.',
+          thermal: 'مقاوم جيد للحريق وعازل حراري مقبول.'
+        },
+        uses: 'ترميم المباني الأثرية والتاريخية، مونة البياض الداخلي، وتثبيت التربة الطينية.',
+        pros: ['يسمح للجدران بالتنفس ويمنع الرطوبة المحتبسة', 'يمتص CO₂ أثناء التصلب', 'مرونة عالية تقلل الشروخ'],
+        cons: ['بطيء التصلب مقارنة بالأسمنت البورتلاندي', 'مقاومة ميكانيكية محدودة للإنشاءات الثقيلة', 'غير مقاوم للماء المباشر'],
+        metrics: { compressive: 30, tensile: 15, thermalInsulation: 60, costEfficiency: 88, sustainability: 82 }
+      },
+      {
+        id: 'bricks',
+        nameAr: 'الطوب الطفلي والخرساني',
+        nameEn: 'Clay & Concrete Bricks',
+        category: 'binders',
+        categoryLabel: 'مواد مصنعة - روابط وبناء',
+        formula: 'Al₂O₃·2SiO₂·2H₂O',
+        icon: 'fa-border-all',
+        accent: 'copper',
+        summary: 'وحدات بناء من سيليكات الألومنيوم المحروقة للجدران الحاملة والقواطيع.',
+        chemicalDetails: 'يتكون الطوب الطفلي من معادن الكاولينيت (Al₂O₃·2SiO₂·2H₂O) وأكاسيد الحديد (Fe₂O₃) التي تمنحه اللون الأحمر عند الحرق بين 900-1100°C حيث تتزجج السيليكا وتربط الحبيبات.',
+        properties: {
+          physical: 'كثافة 1.6 - 1.9 g/cm³ (مفرغ أو مصمت)؛ امتصاص ماء 8% - 15%.',
+          mechanical: 'مقاومة ضغط جيدة للوحدات (10 - 35 MPa).',
+          thermal: 'عزل حراري وصوتي جيد خاصة في الطوب المفرغ.'
+        },
+        uses: 'بناء الحوائط الخارجية والداخلية، القواطيع، والقباب والمباني منخفضة الارتفاع.',
+        pros: ['عزل حراري وصوتي جيد للمباني السكنية', 'مقاومة ممتازة للحريق والعوامل الجوية', 'سهولة التنفيذ والتوافر'],
+        cons: ['استهلاك طاقة عالية في أفران الحرق', 'ظاهرة التزهير (Efflorescence) نتيجة تبخر الأملاح'],
+        metrics: { compressive: 55, tensile: 15, thermalInsulation: 72, costEfficiency: 90, sustainability: 60 }
+      },
+      {
+        id: 'concrete',
+        nameAr: 'الخرسانة المسلحة',
+        nameEn: 'Reinforced Concrete (RC)',
+        category: 'binders',
+        categoryLabel: 'مواد مصنعة - روابط وبناء',
+        formula: 'C-S-H Gel + Fe/C',
+        icon: 'fa-building',
+        accent: 'sky',
+        summary: 'أكثر المواد الإنشائية استخداماً في العالم؛ تدمج مقاومة الخرسانة للضغط مع مقاومة الحديد للشد.',
+        chemicalDetails: 'تعتمد على التوافق الكيميائي والفيزيائي: الوسط القلوي للخرسانة (pH ≈ 12.5) الناتج عن Ca(OH)₂ يكوّن طبقة أكسيد سلبية (Passive Film) تحمي حديد التسليح من التآكل، مع تقارب معامل التمدد الحراري لكليهما.',
+        properties: {
+          physical: 'كثافة 2400 - 2500 kg/m³؛ قابلة للصب في أي شكل هندسي.',
+          mechanical: 'تجمع بين مقاومة ضغط عالية للخرسانة ومقاومة شد عالية للحديد.',
+          thermal: 'مقاومة ممتازة للحريق بفضل الغطاء الخرساني (Concrete Cover).'
+        },
+        uses: 'الهياكل الإنشائية، الأساسات، الأعمدة، الكمرات، الكباري، والأنفاق.',
+        pros: ['أداء إنشائي متكامل في الضغط والشد', 'مرونة معمارية غير محدودة في التشكيل', 'ديمومة عالية ومقاومة للحريق'],
+        cons: ['وزن ذاتي ثقيل جداً', 'معرضة لتآكل الحديد في البيئات البحرية إذا قل الغطاء الخرساني', 'بصمة كربونية مرتفعة'],
+        metrics: { compressive: 90, tensile: 85, thermalInsulation: 45, costEfficiency: 82, sustainability: 40 }
+      },
+      {
+        id: 'steel',
+        nameAr: 'حديد التسليح والصلب الإنشائي',
+        nameEn: 'Reinforcing Steel (Rebar)',
+        category: 'metals',
+        categoryLabel: 'معادن وزجاج',
+        formula: 'Fe + C (0.15-0.30%) + Mn',
+        icon: 'fa-bars-staggered',
+        accent: 'copper',
+        summary: 'سبيكة حديدية كربونية تمنح المنشآت الممطولية (Ductility) والقدرة على مقاومة قوى الشد والزلازل.',
+        chemicalDetails: 'سبيكة من الحديد (Fe) مع نسبة محكومة من الكربون (0.15% - 0.30%) لتكوين طور السمنتيت (Fe₃C) لرفع الصلادة دون فقدان الممطولية، بالإضافة للمنجنيز (Mn) لزيادة المتانة وتقليل هشاشة الكبريت.',
+        properties: {
+          physical: 'كثافة عالية 7.85 g/cm³؛ موصل جيد للحرارة والكهرباء.',
+          mechanical: 'مقاومة شد وخضوع فائقة (Yield Strength: 400 - 500 MPa) ومرونة عالية.',
+          thermal: 'يفقد 50% من مقاومته عند درجات حرارة الحريق فوق 550°C.'
+        },
+        uses: 'تسليح الخرسانة، المنشآت المعدنية، ناطحات السحاب، والجسور المعلقة.',
+        pros: ['أعلى مقاومة للشد والضغط والممطولية ضد الزلازل', 'قابل لإعادة التدوير بنسبة 100%', 'دقة تصنيع وجودة مضمونة'],
+        cons: ['التآكل والصدأ (تكوّن Fe₂O₃·nH₂O) في وجود الرطوبة والأكسجين', 'تأثره بالحرارة العالية', 'تكلفة مرتفعة نسبياً'],
+        metrics: { compressive: 92, tensile: 96, thermalInsulation: 15, costEfficiency: 60, sustainability: 68 }
+      },
+      {
+        id: 'glass',
+        nameAr: 'الزجاج المعماري',
+        nameEn: 'Architectural Soda-Lime Glass',
+        category: 'metals',
+        categoryLabel: 'معادن وزجاج',
+        formula: 'Na₂O · CaO · 6SiO₂',
+        icon: 'fa-window-maximize',
+        accent: 'sky',
+        summary: 'مادة صلبة غير متبلورة (Amorphous) شفافة تجمع بين الإضاءة الطبيعية والعزل الحديث.',
+        chemicalDetails: 'يُصنع بصهر رمل السيليكا (SiO₂ كمكون شبكي) مع كربونات الصوديوم (Na₂CO₃ لخفض درجة الانصهار) وأكسيد الكالسيوم (CaO لمنع ذوبان الزجاج في الماء)، مع أكاسيد معدنية للتحكم في اللون والأشعة.',
+        properties: {
+          physical: 'كثافة 2.5 g/cm³؛ نفاذية عالية للضوء المرئي، غير مسامي تماماً.',
+          mechanical: 'مقاومة ضغط جيدة ولكن مادة قصفة (Brittle) تنكسر فجأة تحت الشد والصدمات.',
+          thermal: 'الزجاج المزدوج (Double Glazing) مع غاز الأرجون يوفر عزلاً حرارياً وصوتياً ممتازاً.'
+        },
+        uses: 'الواجهات الزجاجية (Curtain Walls)، النوافذ، الأسقف السماوية، والزجاج المقسى (Tempered).',
+        pros: ['إدخال الإضاءة الطبيعية وتقليل استهلاك الكهرباء', 'مقاومة تامة للتآكل الكيميائي والعوامل الجوية', 'مظهر عصري راقٍ'],
+        cons: ['هش وقابل للكسر المفاجئ (يُعالج بالتقسية الحرارية)', 'قد يسبب ظاهرة الاحتباس الحراري داخل المبنى (Greenhouse Effect)'],
+        metrics: { compressive: 65, tensile: 25, thermalInsulation: 50, costEfficiency: 62, sustainability: 65 }
+      },
+      {
+        id: 'self_healing',
+        nameAr: 'الخرسانة ذاتية الالتئام',
+        nameEn: 'Bio-Self-Healing Concrete',
+        category: 'modern',
+        categoryLabel: 'حديثة ومستدامة',
+        formula: 'Bacillus + Ca(C₃H₅O₃)₂ → CaCO₃',
+        icon: 'fa-bacteria',
+        accent: 'sky',
+        summary: 'خرسانة ذكية تحتوي على كبسولات بكتيرية تلتئم شروخها ذاتياً عند دخول الماء.',
+        chemicalDetails: 'تُدمج جراثيم بكتيريا (Bacillus pseudofirmus) مع غذائها من لاكتات الكالسيوم داخل الخرسانة. عند حدوث شرخ ودخول الماء، تنشط البكتيريا وتحول اللاكتات كيميائياً إلى كربونات الكالسيوم (CaCO₃) التي تسد الشرخ بالكامل.',
+        properties: {
+          physical: 'نفاذية منخفضة جداً للماء بعد التئام الشروخ الدقيقة (حتى عرض 0.8 mm).',
+          mechanical: 'تحافظ على المقاومة التصميمية وتمنع تدهور القطاع الخرساني.',
+          thermal: 'تتحمل البكتيريا البيئة القلوية العالية للخرسانة لعقود.'
+        },
+        uses: 'الأنفاق، الخزانات المائية، الكباري البحرية، والمنشآت التي يصعب صيانتها دورياً.',
+        pros: ['إطالة العمر الافتراضي للمنشأ وتقليل تكاليف الصيانة', 'حماية حديد التسليح من الصدأ عبر سد مسارات الماء', 'تقنية صديقة للبيئة'],
+        cons: ['تكلفة ابتدائية مرتفعة مقارنة بالخرسانة العادية', 'تحتاج إلى ضبط دقيق لخلط الكبسولات'],
+        metrics: { compressive: 88, tensile: 25, thermalInsulation: 45, costEfficiency: 45, sustainability: 92 }
+      },
+      {
+        id: 'geopolymer',
+        nameAr: 'الأسمنت الجيوبوليمري الأخضر',
+        nameEn: 'Geopolymer Green Cement',
+        category: 'modern',
+        categoryLabel: 'حديثة ومستدامة',
+        formula: '-(Si-O-Al-O)ₙ-',
+        icon: 'fa-leaf',
+        accent: 'copper',
+        summary: 'بديل مستدام للأسمنت البورتلاندي يُصنع من المخلفات الصناعية دون حرق الحجر الجيري.',
+        chemicalDetails: 'يتكون من تفاعل بلمرة غير عضوية (Geopolymerization) لمواد غنية بالسيليكا والألومينا مثل الرماد المتطاير (Fly Ash) أو خبث الحديد (Slag) مع منشط قلوي (NaOH + Na₂SiO₃) لتكوين شبكات بوليمرية ثلاثية الأبعاد.',
+        properties: {
+          physical: 'مسامية دقيقة جداً ومقاومة فائقة لنفاذ الكلوريدات.',
+          mechanical: 'مقاومة ضغط مبكرة وعالية جداً ومقاومة استثنائية للأحماض والكبريتات.',
+          thermal: 'مقاوم للحريق حتى 1000°C دون تشظي.'
+        },
+        uses: 'البنية التحتية في البيئات الكيميائية العدوانية، الوحدات مسبقة الصب، والمباني الخضراء.',
+        pros: ['يخفض انبعاثات الكربون بنسبة تصل إلى 80%', 'مقاومة كيميائية وحرارية فائقة', 'يعيد تدوير المخلفات الصناعية'],
+        cons: ['يتطلب التعامل بحذر مع المنشطات القلوية (NaOH)', 'يحتاج إلى ضبط حرارة المعالجة في الموقع'],
+        metrics: { compressive: 94, tensile: 22, thermalInsulation: 55, costEfficiency: 68, sustainability: 98 }
+      },
+      {
+        id: 'cfrp',
+        nameAr: 'ألياف الكربون البوليمرية (CFRP)',
+        nameEn: 'Carbon Fiber Reinforced Polymer',
+        category: 'modern',
+        categoryLabel: 'حديثة ومستدامة',
+        formula: '(C)ₙ + Epoxy Matrix',
+        icon: 'fa-layer-group',
+        accent: 'sky',
+        summary: 'مادة مركبة فائقة الخفة والقوة تُستخدم في تدعيم وترميم المنشآت الخرسانية والمعدنية.',
+        chemicalDetails: 'تتكون من ألياف كربونية بلورية ذات روابط تساهمية سداسية (sp²) فائقة القوة مدمجة داخل مصفوفة من راتنج الإيبوكسي البوليمري لنقل الإجهادات وحماية الألياف.',
+        properties: {
+          physical: 'كثافة منخفضة جداً (1.6 g/cm³ - خمس وزن الحديد) ولا تصدأ نهائياً.',
+          mechanical: 'مقاومة شد هائلة (2500 - 4000 MPa) تفوق حديد التسليح بـ 6 أضعاف.',
+          thermal: 'يتأثر راتنج الإيبوكسي بدرجات الحرارة المرتفعة ويحتاج عزل حريق.'
+        },
+        uses: 'تدعيم الأعمدة والكمرات، ترميم الكباري، والمنشآت المقاومة للزلازل.',
+        pros: ['نسبة قوة إلى وزن لا تضاهى', 'مقاومة تامة للصدأ والأملاح والرطوبة', 'سرعة وسهولة التركيب دون إيقاف تشغيل المبنى'],
+        cons: ['تكلفة مبدئية مرتفعة', 'سلوك قصف عند الانهيار (بدون مطولية كبيرة)'],
+        metrics: { compressive: 50, tensile: 99, thermalInsulation: 35, costEfficiency: 42, sustainability: 74 }
+      }
+    ];
+
+    const slidesData = [
+      { num: 1, title: 'صفحة العنوان (Title)', tag: 'الهوية', desc: 'اسم المشروع ChemBuild Tech، الشعار Materials Based Architecture، وأسماء فريق العمل.' },
+      { num: 2, title: 'المقدمة (Introduction)', tag: 'تمهيد', desc: 'أهمية الربط بين الكيمياء والعمارة وكيف يحدد التركيب الجزيئي كفاءة المنشآت الحديثة.' },
+      { num: 3, title: 'تصنيف مواد البناء', tag: 'تصنيف', desc: 'الفرق الجوهري بين المواد الطبيعية الأولية والمواد المصنعة/الفرعية والمركبة.' },
+      { num: 4, title: 'المواد الطبيعية (Natural)', tag: 'أساسية', desc: 'دراسة كيمياء الأحجار الجيرية (CaCO₃)، الأخشاب (السليلوز واللجنين)، والرمال (SiO₂).' },
+      { num: 5, title: 'المواد المصنعة - الجزء 1', tag: 'روابط', desc: 'الأسمنت البورتلاندي (C₃S, C₂S)، الجير المطفأ، الطوب الطفلي، والخرسانة.' },
+      { num: 6, title: 'المواد المصنعة - الجزء 2', tag: 'معادن وزجاج', desc: 'سبائك حديد التسليح (Fe-C) والزجاج المعماري غير المتبلور (Soda-Lime Glass).' },
+      { num: 7, title: 'خصائص مواد البناء', tag: 'تحليل', desc: 'مقارنة الخواص الفيزيائية (الكثافة والمسامية)، الميكانيكية (الضغط والشد)، والحرارية.' },
+      { num: 8, title: 'الاستخدامات في التشييد', tag: 'تطبيق', desc: 'جدول هندسي يربط كل مادة بتركيبها الكيميائي وتطبيقها الإنشائي والمعماري الدقيق.' },
+      { num: 9, title: 'المميزات والعيوب', tag: 'تقييم نقدي', desc: 'تحليل التحديات الكيميائية مثل انبعاثات CO₂ للأسمنت وصدأ حديد التسليح الكهروكيميائي.' },
+      { num: 10, title: 'العوامل المؤثرة في الاختيار', tag: 'قرار هندسي', desc: 'معايير اختيار المادة: المقاومة، التكلفة، التوافر المحلي، الظروف البيئية، والاستدامة.' },
+      { num: 11, title: 'المواد الحديثة والمستدامة', tag: 'ابتكار', desc: 'الخرسانة ذاتية الالتئام بالبكتيريا، الأسمنت الجيوبوليمري الأخضر، وألياف الكربون.' },
+      { num: 12, title: 'الخاتمة (Conclusion)', tag: 'خلاصة', desc: 'رؤية مستقبلية نحو عمارة مستدامة قائمة على هندسة المواد الذكية صديقة البيئة.' },
+      { num: 13, title: 'المراجع العلمية (References)', tag: 'توثيق', desc: 'المراجع الأكاديمية والكودات الهندسية المعتمدة (ASTM, ACI, ECP) في إعداد المشروع.' }
+    ];
+
+    const quizData = [
+      {
+        q: '1. أي من مركبات الكلنكر التالية هو المسؤول الرئيسي عن المقاومة المبكرة للأسمنت البورتلاندي خلال أول 7 أيام؟',
+        options: ['سيليكات ثنائي الكالسيوم (C₂S)', 'سيليكات ثلاثي الكالسيوم (C₃S)', 'الجبس المضاف (CaSO₄·2H₂O)', 'أكسيد المغنيسيوم (MgO)'],
+        answer: 1,
+        explanation: 'مركب الأليت (C₃S) يتفاعل بسرعة مع الماء مكوناً جل (C-S-H) المسؤول عن التصلب والمقاومة المبكرة.'
+      },
+      {
+        q: '2. ما الدور الكيميائي لهيدروكسيد الكالسيوم Ca(OH)₂ الناتج من تفاعل إماهة الأسمنت داخل الخرسانة المسلحة؟',
+        options: ['يسبب تآكل الحديد فوراً', 'يرفع القلوية (pH ≈ 12.5) لتكوين طبقة حماية سلبية على الحديد', 'يخفض مقاومة الضغط للركام', 'يعمل كعازل حراري للزجاج'],
+        answer: 1,
+        explanation: 'الوسط القلوي العالي يحمي حديد التسليح بطبقة أكسيد رقيقة مستقرة (Passive Film) تمنع الصدأ ما لم تخترقها الكلوريدات.'
+      },
+      {
+        q: '3. ماذا يحدث عند زيادة نسبة الماء إلى الأسمنت (w/c) عن الحد التصميمي في الخلطة الخرسانية؟',
+        options: ['تزداد مقاومة الضغط وتقل المسامية', 'يتبخر الماء الزائد تاركاً مسام شعرية تضعف المقاومة', 'يتحول الأسمنت إلى جيوبوليمر', 'تقل قابلية التشغيل تماماً'],
+        answer: 1,
+        explanation: 'الماء الزائد عن حاجة التفاعل الكيميائي يتبخر تاركاً فراغات ومسام شعرية تقلل الكثافة ومقاومة الضغط.'
+      },
+      {
+        q: '4. في الخرسانة ذاتية الالتئام (Bio-Concrete)، ما المركب الذي تفرزه البكتيريا لسد الشروخ عند دخول الماء؟',
+        options: ['كربونات الكالسيوم (CaCO₃)', 'حمض الكبريتيك (H₂SO₄)', 'كلوريد الصوديوم (NaCl)', 'أكسيد الحديد (Fe₂O₃)'],
+        answer: 0,
+        explanation: 'تنشط بكتيريا Bacillus وتحول لاكتات الكالسيوم إلى بلورات كربونات الكالسيوم (CaCO₃) غير القابلة للذوبان فتغلق الشرخ.'
+      },
+      {
+        q: '5. لماذا يُضاف أكسيد الكالسيوم (CaO) إلى خليط رمل السيليكا وكربونات الصوديوم عند صناعة الزجاج المعماري؟',
+        options: ['لجعل الزجاج موصلاً للكهرباء', 'لمنع ذوبان الزجاج في الماء وزيادة استقراره الكيميائي', 'لتحويل الزجاج إلى معدن مرن', 'لإعطائه اللون الأحمر'],
+        answer: 1,
+        explanation: 'زجاج سيليكات الصوديوم وحده يذوب في الماء، لذا يُضاف الجير (CaO) لتكوين زجاج الصودا والجير المستقر والمقاوم للماء.'
+      },
+      {
+        q: '6. كيف يساهم الأسمنت الجيوبوليمري الأخضر في حماية البيئة مقارنة بالأسمنت البورتلاندي؟',
+        options: ['يستهلك ضعف كمية الحجر الجيري', 'يعتمد على بلمرة المخلفات الصناعية دون حرق كربونات الكالسيوم فيخفض CO₂ بنسبة 80%', 'يُصنع من البلاستيك المعاد تدويره فقط', 'لا يحتاج أي تفاعل كيميائي'],
+        answer: 1,
+        explanation: 'تجنب التفكك الحراري للحجر الجيري (CaCO₃ → CaO + CO₂) يقلل الانبعاثات الكربونية بنحو 80%.'
+      }
+    ];
+
+    // =========================================================================
+    // APPLICATION STATE
+    // =========================================================================
+    let authMode = 'login';
+    let currentCategory = 'all';
+    let userAnswers = {};
+    let isAdminUnlocked = false;
+    let autoApproveComments = true;
+
+    const teamPinnedMessages = [
+      {
+        id: 'team-welcome',
+        name: 'فريق عمل ChemBuild Tech',
+        role: 'فريق ChemBuild Tech',
+        rating: 5,
+        comment: 'أهلاً ومرحباً بدكتورة المادة الفاضلة وزملائنا طلاب الدفعة الأعزاء في المنصة التفاعلية لمشروع ChemBuild Tech. نتقدم بخالص الشكر والتقدير لحضراتكم على تشريفنا ودعمكم المستمر، ويسعدنا استقبال آرائكم وتقييمكم البناء.',
+        status: 'approved',
+        pinned: true,
+        timeLabel: 'رسالة ترحيب وشكر'
+      },
+      {
+        id: 'team-vision',
+        name: 'فريق التطوير والبحث العلمي — ChemBuild Tech',
+        role: 'فريق ChemBuild Tech',
+        rating: 5,
+        comment: 'رؤيتنا للتطبيق: بناء جسر هندسي تفاعلي يربط بين التفاعلات الجزيئية لمواد البناء (مثل إماهة الأسمنت وتكوّن جل C-S-H، وآليات تآكل الحديد، والبدائل الخضراء كالجيوبوليمر) وبين التصميم المعماري الدقيق والمستدام لخدمة المهندسين والطلاب.',
+        status: 'approved',
+        pinned: true,
+        timeLabel: 'رؤية وتقييم الفريق للتطبيق'
+      }
+    ];
+
+    let cloudFeedbacks = [];
+    let cloudUsers = [];
+
+    function loadLocalData() {
+      try {
+        const savedFb = localStorage.getItem('chembuild_fb_v3');
+        cloudFeedbacks = savedFb ? JSON.parse(savedFb) : [];
+        const savedUsers = localStorage.getItem('chembuild_users_v3');
+        cloudUsers = savedUsers ? JSON.parse(savedUsers) : [];
+        const savedMode = localStorage.getItem('chembuild_auto_approve');
+        if (savedMode !== null) autoApproveComments = savedMode === 'true';
+      } catch (e) {}
+    }
+
+    function saveLocalData() {
+      try {
+        localStorage.setItem('chembuild_fb_v3', JSON.stringify(cloudFeedbacks));
+        localStorage.setItem('chembuild_users_v3', JSON.stringify(cloudUsers));
+        localStorage.setItem('chembuild_auto_approve', String(autoApproveComments));
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // TOAST NOTIFICATION HELPER
+    // =========================================================================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const colors = {
+        success: 'border-emerald-500/50 bg-navy-900 text-emerald-400',
+        info: 'border-skybrand-500/50 bg-navy-900 text-skybrand-400',
+        warning: 'border-copper-500/50 bg-navy-900 text-copper-400',
+        error: 'border-red-500/50 bg-navy-900 text-red-400'
+      };
+      const icons = {
+        success: 'fa-circle-check',
+        info: 'fa-circle-info',
+        warning: 'fa-bolt',
+        error: 'fa-circle-xmark'
+      };
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl border shadow-xl text-xs font-bold transition-all duration-300 ${colors[type] || colors.info}`;
+      toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} text-sm"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4200);
+    }
+
+    // =========================================================================
+    // HTML ESCAPE HELPER
+    // =========================================================================
+    function escapeHTML(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // =========================================================================
+    // REAL-TIME FIRESTORE LISTENERS (SAFE & ROLE-AWARE)
+    // =========================================================================
+    let unsubFeedbacks = null;
+    let unsubUsers = null;
+    let unsubSettings = null;
+    let listenersStarted = false;
+
+    function attachAdminUsersListener() {
+      if (!isFirebaseConfigured || !db || !isAdminUnlocked) return;
+      if (unsubUsers) unsubUsers();
+
+      const usersQuery = query(collection(db, "users"), orderBy("createdAt", "desc"));
+      unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+        cloudUsers = snapshot.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        }));
+        renderAdminDashboard();
+      }, (err) => {
+        if (err.code === 'permission-denied') {
+          setCloudStatus("rules_restricted");
+        }
+      });
+    }
+
+    function setupRealtimeListeners() {
+      if (!isFirebaseConfigured || !db) {
+        loadLocalData();
+        renderAllDynamicViews();
+        return;
+      }
+
+      if (unsubFeedbacks) unsubFeedbacks();
+      if (unsubSettings) unsubSettings();
+
+      // 1. Listen to Feedbacks Collection in Real-Time
+      const fbQuery = query(collection(db, "feedbacks"), orderBy("createdAt", "desc"));
+      unsubFeedbacks = onSnapshot(fbQuery, (snapshot) => {
+        setCloudStatus("connected");
+        cloudFeedbacks = snapshot.docs.map(docSnap => {
+          const d = docSnap.data();
+          let timeStr = 'الآن';
+          if (d.createdAt && d.createdAt.toDate) {
+            timeStr = d.createdAt.toDate().toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+          }
+          return {
+            id: docSnap.id,
+            name: d.name || 'مشارك',
+            role: d.role || 'زائر',
+            rating: d.rating || 5,
+            comment: d.comment || '',
+            status: d.status || 'approved',
+            timeLabel: timeStr
+          };
+        });
+        renderFeedbacks();
+        renderAdminDashboard();
+      }, (err) => {
+        if (err.code === 'permission-denied') {
+          setCloudStatus("rules_restricted");
+          loadLocalData();
+          renderFeedbacks();
+          renderAdminDashboard();
+        }
+      });
+
+      // 2. Listen to Moderation Settings
+      unsubSettings = onSnapshot(doc(db, "settings", "moderation"), (docSnap) => {
+        if (docSnap.exists()) {
+          autoApproveComments = docSnap.data().autoApprove !== false;
+          updateModerationButtonsUI();
+        }
+      }, () => {});
+
+      // 3. Attach Users listener only if Admin is unlocked
+      if (isAdminUnlocked) {
+        attachAdminUsersListener();
+      }
+    }
+
+    // =========================================================================
+    // AUTHENTICATION LOGIC (FIREBASE EMAIL/PASSWORD + VERIFICATION + RESET)
+    // =========================================================================
+    const authScreen = document.getElementById('auth-screen');
+    const appWorkspace = document.getElementById('app-workspace');
+    const tabLogin = document.getElementById('tab-login');
+    const tabSignup = document.getElementById('tab-signup');
+    const signupExtraFields = document.getElementById('signup-extra-fields');
+    const authSubmitText = document.getElementById('auth-submit-text');
+    const verifyBanner = document.getElementById('verify-email-banner');
+
+    let isSigningUp = false;
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      const authNameInput = document.getElementById('auth-name');
+      const authPasswordInput = document.getElementById('auth-password');
+
+      if (mode === 'login') {
+        tabLogin.classList.add('bg-skybrand-500', 'text-white', 'shadow');
+        tabLogin.classList.remove('text-slate-400');
+        tabSignup.classList.remove('bg-skybrand-500', 'text-white', 'shadow');
+        tabSignup.classList.add('text-slate-400');
+        signupExtraFields.classList.add('hidden');
+        authNameInput.required = false;
+        authPasswordInput.setAttribute('autocomplete', 'current-password');
+        authSubmitText.textContent = 'دخول إلى المنصة';
+      } else {
+        tabSignup.classList.add('bg-skybrand-500', 'text-white', 'shadow');
+        tabSignup.classList.remove('text-slate-400');
+        tabLogin.classList.remove('bg-skybrand-500', 'text-white', 'shadow');
+        tabLogin.classList.add('text-slate-400');
+        signupExtraFields.classList.remove('hidden');
+        authNameInput.required = true;
+        authPasswordInput.setAttribute('autocomplete', 'new-password');
+        authSubmitText.textContent = 'إنشاء الحساب وإرسال رابط التفعيل';
+      }
+    }
+
+    tabLogin.addEventListener('click', () => setAuthMode('login'));
+    tabSignup.addEventListener('click', () => setAuthMode('signup'));
+
+    function enterWorkspace(userName, userRole, isVerified = true, email = '') {
+      document.getElementById('user-display-name').textContent = userName;
+      document.getElementById('user-display-role').textContent = userRole;
+      authScreen.classList.add('hidden');
+      appWorkspace.classList.remove('hidden');
+
+      if (!isVerified && email) {
+        verifyBanner.classList.remove('hidden');
+      } else {
+        verifyBanner.classList.add('hidden');
+      }
+
+      if (email && ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email.toLowerCase())) {
+        unlockAdminPanel(false);
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Monitor Firebase Auth State & Start Listeners Safely
+    if (isFirebaseConfigured && auth) {
+      onAuthStateChanged(auth, async (user) => {
+        if (!listenersStarted) {
+          listenersStarted = true;
+          setupRealtimeListeners();
+        }
+
+        if (user && !user.isAnonymous && !isSigningUp) {
+          setupRealtimeListeners();
+          let displayName = user.displayName || user.email.split('@')[0];
+          let savedRole = '';
+          let hasCreatedAt = false;
+
+          if (db) {
+            try {
+              const userSnap = await getDoc(doc(db, "users", user.uid));
+              if (userSnap.exists()) {
+                const uData = userSnap.data();
+                if (uData.name) displayName = uData.name;
+                if (uData.role) savedRole = uData.role;
+                if (uData.createdAt) hasCreatedAt = true;
+              }
+            } catch (e) {}
+          }
+
+          const isAdmin = ADMIN_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
+          const roleLabel = isAdmin
+            ? 'مشرف عام (Admin) • ChemBuild Tech'
+            : (savedRole ? `${savedRole} ${user.emailVerified ? '✓' : '(بانتظار التفعيل)'}` : (user.emailVerified ? 'حساب موثق ✓' : 'بانتظار تفعيل البريد'));
+
+          enterWorkspace(displayName, roleLabel, user.emailVerified, user.email);
+
+          // Sync verification status & login timestamp to Firestore
+          if (db) {
+            try {
+              const updatePayload = {
+                uid: user.uid,
+                name: displayName,
+                email: user.email,
+                emailVerified: user.emailVerified,
+                lastLogin: serverTimestamp()
+              };
+              if (savedRole) updatePayload.role = savedRole;
+              if (!hasCreatedAt) updatePayload.createdAt = serverTimestamp();
+              await setDoc(doc(db, "users", user.uid), updatePayload, { merge: true });
+            } catch (e) {}
+          }
+        }
+      });
+    } else {
+      setupRealtimeListeners();
+    }
+
+    // Submit Login / Sign Up
+    document.getElementById('auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const nameInput = document.getElementById('auth-name').value.trim();
+      const roleInput = document.getElementById('auth-role').value;
+      const submitBtn = document.getElementById('auth-submit-btn');
+
+      if (!isFirebaseConfigured || !auth) {
+        const displayName = authMode === 'signup' && nameInput ? nameInput : email.split('@')[0];
+        const displayRole = authMode === 'signup' ? roleInput : 'عضو (معاينة محلية)';
+        if (authMode === 'signup') {
+          cloudUsers.unshift({
+            id: 'local-' + Date.now(),
+            name: displayName,
+            email,
+            role: roleInput,
+            emailVerified: false
+          });
+          saveLocalData();
+          renderAdminDashboard();
+        }
+        enterWorkspace(displayName, displayRole, true, email);
+        showToast('تم الدخول في وضع المعاينة المحلي.', 'warning');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-70');
+
+      try {
+        if (authMode === 'signup') {
+          isSigningUp = true;
+          const fullName = nameInput || email.split('@')[0];
+          const cred = await createUserWithEmailAndPassword(auth, email, password);
+          await updateProfile(cred.user, { displayName: fullName });
+          await sendEmailVerification(cred.user);
+
+          if (db) {
+            try {
+              await setDoc(doc(db, "users", cred.user.uid), {
+                uid: cred.user.uid,
+                name: fullName,
+                email: email,
+                role: roleInput,
+                emailVerified: false,
+                createdAt: serverTimestamp(),
+                lastLogin: serverTimestamp()
+              }, { merge: true });
+            } catch (dbErr) {
+              console.warn("Could not write user profile to Firestore:", dbErr);
+            }
+          }
+
+          isSigningUp = false;
+          setupRealtimeListeners();
+          showToast('تم إنشاء الحساب! أرسلنا رابط تفعيل إلى بريدك الإلكتروني (تحقق من Inbox أو Spam).', 'success');
+          enterWorkspace(fullName, roleInput, false, email);
+        } else {
+          const cred = await signInWithEmailAndPassword(auth, email, password);
+          showToast(`أهلاً بعودتك، ${cred.user.displayName || email.split('@')[0]}!`, 'success');
+        }
+      } catch (err) {
+        isSigningUp = false;
+        let msg = 'حدث خطأ أثناء المصادقة. تأكد من البيانات.';
+        if (err.code === 'auth/email-already-in-use') msg = 'هذا البريد الإلكتروني مسجل بالفعل! انتقل لتبويب تسجيل الدخول.';
+        else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') msg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+        else if (err.code === 'auth/weak-password') msg = 'كلمة المرور ضعيفة، يجب أن تكون 6 أحرف على الأقل.';
+        else if (err.code === 'auth/invalid-email') msg = 'صيغة البريد الإلكتروني غير صحيحة.';
+        else if (err.code === 'auth/too-many-requests') msg = 'تم حظر المحاولات مؤقتاً لكثرة المحاولات الخاطئة. حاول بعد قليل.';
+        else if (err.code === 'auth/operation-not-allowed') msg = 'يرجى تفعيل خيار Email/Password من لوحة Firebase Authentication أولاً.';
+        showToast(msg, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-70');
+      }
+    });
+
+    // Forgot Password / Reset via Email
+    document.getElementById('btn-forgot-password').addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value.trim();
+      if (!email) {
+        showToast('اكتب بريدك الإلكتروني في الخانة أولاً ثم اضغط على نسيت كلمة المرور.', 'warning');
+        return;
+      }
+      if (!isFirebaseConfigured || !auth) {
+        showToast('هذه الميزة تعمل فور ربط إعدادات firebaseConfig الخاصة بمشروعك.', 'info');
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showToast(`تم إرسال رابط تعيين كلمة مرور جديدة إلى: ${email}`, 'success');
+      } catch (err) {
+        showToast('تعذر إرسال رابط استعادة كلمة المرور. تأكد من صحة البريد الإلكتروني.', 'error');
+      }
+    });
+
+    // Resend Verification & Check Verification Buttons
+    document.getElementById('btn-resend-verify').addEventListener('click', async () => {
+      if (auth && auth.currentUser) {
+        try {
+          await sendEmailVerification(auth.currentUser);
+          showToast('تمت إعادة إرسال رابط التفعيل إلى بريدك الإلكتروني.', 'success');
+        } catch (e) {
+          showToast('يرجى الانتظار دقيقة قبل طلب رابط جديد.', 'warning');
+        }
+      }
+    });
+
+    document.getElementById('btn-check-verified').addEventListener('click', async () => {
+      if (auth && auth.currentUser) {
+        await auth.currentUser.reload();
+        if (auth.currentUser.emailVerified) {
+          verifyBanner.classList.add('hidden');
+          const roleEl = document.getElementById('user-display-role');
+          roleEl.textContent = roleEl.textContent.replace('(بانتظار التفعيل)', '✓');
+          if (db) {
+            try {
+              await updateDoc(doc(db, "users", auth.currentUser.uid), { emailVerified: true });
+            } catch (e) {}
+          }
+          showToast('ممتاز! تم توثيق بريدك الإلكتروني بنجاح.', 'success');
+        } else {
+          showToast('لم يتم الضغط على الرابط في بريدك الإلكتروني بعد.', 'warning');
+        }
+      }
+    });
+
+    // Live Demo Bypass (Attempts optional Anonymous Auth for Firestore rules compatibility)
+    document.getElementById('btn-live-demo').addEventListener('click', async () => {
+      if (isFirebaseConfigured && auth && !auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (e) {
+          // Ignore if Anonymous Auth is not enabled in Firebase Console
+        }
+      }
+      enterWorkspace('دكتورة المادة وطلاب الدفعة | ضيوف العرض', 'Live Presentation Mode', true, '');
+      showToast('أهلاً ومرحباً بكم في العرض المباشر لمشروع ChemBuild Tech', 'success');
+    });
+
+    // Open Admin directly from Auth Screen
+    document.getElementById('btn-open-admin-from-auth').addEventListener('click', () => {
+      enterWorkspace('مشرف فريق ChemBuild Tech', 'Admin Mode', true, '');
+      switchTab('admin');
+    });
+
+    // Logout
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      if (isFirebaseConfigured && auth && auth.currentUser) {
+        await signOut(auth);
+      }
+      appWorkspace.classList.add('hidden');
+      authScreen.classList.remove('hidden');
+      showToast('تم تسجيل الخروج بنجاح', 'info');
+    });
+
+    document.getElementById('btn-print-pdf').addEventListener('click', () => window.print());
+
+    // =========================================================================
+    // MAIN NAVIGATION TABS
+    // =========================================================================
+    const mainNavBtns = document.querySelectorAll('.main-nav-btn');
+    const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+    const tabSections = document.querySelectorAll('.tab-section');
+
+    function switchTab(targetTab) {
+      tabSections.forEach(sec => {
+        sec.classList.toggle('hidden', sec.id !== `section-${targetTab}`);
+      });
+
+      mainNavBtns.forEach(btn => {
+        const isActive = btn.dataset.tab === targetTab;
+        if (targetTab === 'admin' && btn.dataset.tab === 'admin') {
+          btn.classList.add('bg-copper-500', 'text-white');
+          btn.classList.remove('text-copper-400');
+        } else if (btn.dataset.tab === 'admin') {
+          btn.classList.remove('bg-copper-500', 'text-white');
+          btn.classList.add('text-copper-400');
+        } else if (isActive) {
+          btn.classList.add('bg-skybrand-500', 'text-white');
+          btn.classList.remove('text-slate-300', 'hover:text-white', 'hover:bg-navy-800');
+        } else {
+          btn.classList.remove('bg-skybrand-500', 'text-white');
+          btn.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-navy-800');
+        }
+      });
+
+      mobileNavBtns.forEach(btn => {
+        const isActive = btn.dataset.tab === targetTab;
+        if (btn.dataset.tab !== 'admin') {
+          btn.classList.toggle('text-skybrand-400', isActive);
+          btn.classList.toggle('text-slate-400', !isActive);
+        }
+      });
+    }
+
+    mainNavBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+    mobileNavBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+    // =========================================================================
+    // CHEMICAL MATERIALS LIBRARY & MODAL
+    // =========================================================================
+    const materialsGrid = document.getElementById('materials-grid');
+    const searchInput = document.getElementById('material-search');
+    const filterPills = document.querySelectorAll('.filter-pill');
+    const materialModal = document.getElementById('material-modal');
+    const modalBody = document.getElementById('modal-body-content');
+
+    function renderMaterials() {
+      const queryStr = searchInput.value.trim().toLowerCase();
+      const filtered = materialsDB.filter(mat => {
+        const matchCat = currentCategory === 'all' || mat.category === currentCategory;
+        const matchText =
+          mat.nameAr.toLowerCase().includes(queryStr) ||
+          mat.nameEn.toLowerCase().includes(queryStr) ||
+          mat.formula.toLowerCase().includes(queryStr) ||
+          mat.summary.toLowerCase().includes(queryStr);
+        return matchCat && matchText;
+      });
+
+      if (filtered.length === 0) {
+        materialsGrid.innerHTML = `
+          <div class="col-span-full glass-panel rounded-2xl p-8 text-center text-slate-400">
+            <i class="fa-solid fa-flask-vial text-3xl mb-2 text-skybrand-400"></i>
+            <p class="text-sm font-bold">لا توجد مواد مطابقة لبحثك. جرب كلمة أو صيغة كيميائية أخرى.</p>
+          </div>
+        `;
+        return;
+      }
+
+      materialsGrid.innerHTML = filtered.map(mat => {
+        const isSky = mat.accent === 'sky';
+        const badgeStyle = isSky
+          ? 'bg-skybrand-500/15 text-skybrand-400 border-skybrand-500/30'
+          : 'bg-copper-500/15 text-copper-400 border-copper-500/30';
+        const iconColor = isSky ? 'text-skybrand-400' : 'text-copper-400';
+
+        return `
+          <article data-mat-id="${mat.id}" class="material-card glass-panel rounded-2xl p-5 border border-navy-700 flex flex-col justify-between cursor-pointer">
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="w-11 h-11 rounded-xl bg-navy-900 border border-navy-700 flex items-center justify-center shrink-0">
+                  <i class="fa-solid ${mat.icon} text-lg ${iconColor}"></i>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border ${badgeStyle}">
+                  ${mat.categoryLabel}
+                </span>
+              </div>
+
+              <h3 class="text-base font-extrabold text-white mb-0.5">${mat.nameAr}</h3>
+              <p class="text-[11px] text-slate-400 mb-2.5" dir="ltr">${mat.nameEn}</p>
+
+              <div class="formula-badge text-xs font-bold text-emerald-400 bg-navy-950/90 px-3 py-1.5 rounded-lg border border-navy-700/80 mb-3 inline-block">
+                ${mat.formula}
+              </div>
+
+              <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                ${mat.summary}
+              </p>
+            </div>
+
+            <div class="pt-3 border-t border-navy-700/80 flex items-center justify-between text-xs font-bold text-skybrand-400">
+              <span>التفاصيل الكيميائية والخواص</span>
+              <i class="fa-solid fa-arrow-left"></i>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      document.querySelectorAll('[data-mat-id]').forEach(card => {
+        card.addEventListener('click', () => openMaterialModal(card.dataset.matId));
+      });
+    }
+
+    function openMaterialModal(matId) {
+      const mat = materialsDB.find(m => m.id === matId);
+      if (!mat) return;
+
+      modalBody.innerHTML = `
+        <div class="flex items-start gap-4 border-b border-navy-700 pb-4">
+          <div class="w-14 h-14 rounded-2xl bg-navy-900 border border-skybrand-500/40 flex items-center justify-center shrink-0">
+            <i class="fa-solid ${mat.icon} text-2xl text-skybrand-400"></i>
+          </div>
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-skybrand-500/15 text-skybrand-400 border border-skybrand-500/30">
+              ${mat.categoryLabel}
+            </span>
+            <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-1">${mat.nameAr}</h2>
+            <p class="text-xs text-slate-400" dir="ltr">${mat.nameEn}</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-navy-900/90 border border-navy-700 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs font-bold text-skybrand-400">التركيب والتفاعل الكيميائي:</span>
+            <span class="formula-badge text-xs font-bold text-emerald-400 bg-navy-950 px-3 py-1 rounded-lg border border-navy-700">${mat.formula}</span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-200 leading-relaxed">${mat.chemicalDetails}</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="p-3.5 rounded-xl bg-navy-900/80 border border-navy-700">
+            <p class="text-xs font-bold text-skybrand-400 mb-1"><i class="fa-solid fa-weight-hanging ml-1"></i> الخواص الفيزيائية</p>
+            <p class="text-xs text-slate-300 leading-relaxed">${mat.properties.physical}</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-navy-900/80 border border-navy-700">
+            <p class="text-xs font-bold text-copper-400 mb-1"><i class="fa-solid fa-dumbbell ml-1"></i> الخواص الميكانيكية</p>
+            <p class="text-xs text-slate-300 leading-relaxed">${mat.properties.mechanical}</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-navy-900/80 border border-navy-700">
+            <p class="text-xs font-bold text-emerald-400 mb-1"><i class="fa-solid fa-temperature-half ml-1"></i> الخواص الحرارية</p>
+            <p class="text-xs text-slate-300 leading-relaxed">${mat.properties.thermal}</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-skybrand-500/10 border border-skybrand-500/30">
+          <p class="text-xs font-bold text-skybrand-400 mb-1"><i class="fa-solid fa-helmet-safety ml-1"></i> الاستخدامات في التشييد والعمارة:</p>
+          <p class="text-xs sm:text-sm text-white">${mat.uses}</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+            <p class="text-xs font-bold text-emerald-400 mb-2"><i class="fa-solid fa-circle-check ml-1"></i> المميزات الهندسية</p>
+            <ul class="space-y-1.5 text-xs text-slate-200 list-disc list-inside">
+              ${mat.pros.map(p => `<li>${p}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30">
+            <p class="text-xs font-bold text-red-400 mb-2"><i class="fa-solid fa-circle-xmark ml-1"></i> العيوب والمحددات</p>
+            <ul class="space-y-1.5 text-xs text-slate-200 list-disc list-inside">
+              ${mat.cons.map(c => `<li>${c}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+
+      materialModal.classList.remove('hidden');
+      materialModal.classList.add('flex');
+    }
+
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      materialModal.classList.add('hidden');
+      materialModal.classList.remove('flex');
+    });
+
+    materialModal.addEventListener('click', (e) => {
+      if (e.target === materialModal) {
+        materialModal.classList.add('hidden');
+        materialModal.classList.remove('flex');
+      }
+    });
+
+    filterPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        currentCategory = pill.dataset.cat;
+        filterPills.forEach(p => {
+          p.classList.remove('bg-skybrand-500', 'text-white', 'shadow');
+          p.classList.add('bg-navy-800', 'text-slate-300', 'border', 'border-navy-700');
+        });
+        pill.classList.add('bg-skybrand-500', 'text-white', 'shadow');
+        pill.classList.remove('bg-navy-800', 'text-slate-300', 'border', 'border-navy-700');
+        renderMaterials();
+      });
+    });
+
+    searchInput.addEventListener('input', renderMaterials);
+
+    // =========================================================================
+    // MATERIAL COMPARATOR
+    // =========================================================================
+    const selectA = document.getElementById('compare-select-a');
+    const selectB = document.getElementById('compare-select-b');
+    const comparisonResult = document.getElementById('comparison-result');
+
+    function initComparator() {
+      materialsDB.forEach(mat => {
+        selectA.add(new Option(`${mat.nameAr} (${mat.formula})`, mat.id));
+        selectB.add(new Option(`${mat.nameAr} (${mat.formula})`, mat.id));
+      });
+      selectA.value = 'cement';
+      selectB.value = 'geopolymer';
+      renderComparison();
+    }
+
+    function renderBar(label, valA, valB) {
+      return `
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-xs font-bold">
+            <span class="text-skybrand-400 font-mono">${valA}%</span>
+            <span class="text-slate-200">${label}</span>
+            <span class="text-copper-400 font-mono">${valB}%</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="w-full bg-navy-950 rounded-full h-2.5 flex justify-end overflow-hidden border border-navy-700">
+              <div class="bg-skybrand-500 h-full rounded-full transition-all duration-500" style="width: ${valA}%"></div>
+            </div>
+            <div class="w-full bg-navy-950 rounded-full h-2.5 overflow-hidden border border-navy-700">
+              <div class="bg-copper-500 h-full rounded-full transition-all duration-500" style="width: ${valB}%"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderComparison() {
+      const matA = materialsDB.find(m => m.id === selectA.value);
+      const matB = materialsDB.find(m => m.id === selectB.value);
+      if (!matA || !matB) return;
+
+      const winnerSust = matA.metrics.sustainability >= matB.metrics.sustainability ? matA.nameAr : matB.nameAr;
+      const winnerStrength = (matA.metrics.compressive + matA.metrics.tensile) >= (matB.metrics.compressive + matB.metrics.tensile) ? matA.nameAr : matB.nameAr;
+
+      comparisonResult.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-5 rounded-2xl bg-navy-900/90 border border-skybrand-500/40 space-y-2">
+            <span class="text-[11px] font-bold text-skybrand-400">${matA.categoryLabel}</span>
+            <h3 class="text-lg font-extrabold text-white">${matA.nameAr}</h3>
+            <p class="formula-badge text-xs text-emerald-400 bg-navy-950 px-2.5 py-1 rounded inline-block">${matA.formula}</p>
+            <p class="text-xs text-slate-300 pt-1"><strong>الخواص الميكانيكية:</strong> ${matA.properties.mechanical}</p>
+            <p class="text-xs text-slate-300"><strong>الاستخدام الرئيسي:</strong> ${matA.uses}</p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-navy-900/90 border border-copper-500/40 space-y-2">
+            <span class="text-[11px] font-bold text-copper-400">${matB.categoryLabel}</span>
+            <h3 class="text-lg font-extrabold text-white">${matB.nameAr}</h3>
+            <p class="formula-badge text-xs text-emerald-400 bg-navy-950 px-2.5 py-1 rounded inline-block">${matB.formula}</p>
+            <p class="text-xs text-slate-300 pt-1"><strong>الخواص الميكانيكية:</strong> ${matB.properties.mechanical}</p>
+            <p class="text-xs text-slate-300"><strong>الاستخدام الرئيسي:</strong> ${matB.uses}</p>
+          </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-navy-900/90 border border-navy-700 space-y-4">
+          <h4 class="text-sm font-extrabold text-white text-center">مؤشرات الأداء الهندسي والبيئي (0 - 100%)</h4>
+          ${renderBar('مقاومة الضغط (Compressive Strength)', matA.metrics.compressive, matB.metrics.compressive)}
+          ${renderBar('مقاومة الشد (Tensile Strength)', matA.metrics.tensile, matB.metrics.tensile)}
+          ${renderBar('العزل الحراري (Thermal Insulation)', matA.metrics.thermalInsulation, matB.metrics.thermalInsulation)}
+          ${renderBar('الكفاءة الاقتصادية (Cost Efficiency)', matA.metrics.costEfficiency, matB.metrics.costEfficiency)}
+          ${renderBar('الاستدامة البيئية (Sustainability)', matA.metrics.sustainability, matB.metrics.sustainability)}
+        </div>
+
+        <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-slate-200 leading-relaxed">
+          <p class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-lightbulb ml-1"></i> الخلاصة الهندسية للاختيار:</p>
+          تتفوق مادة <strong class="text-white">${winnerStrength}</strong> في الأداء الميكانيكي الإجمالي (الضغط والشد)، بينما تتفوق مادة <strong class="text-white">${winnerSust}</strong> في معايير الاستدامة وتقليل الأثر البيئي.
+        </div>
+      `;
+    }
+
+    selectA.addEventListener('change', renderComparison);
+    selectB.addEventListener('change', renderComparison);
+
+    document.querySelectorAll('.preset-compare-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectA.value = btn.dataset.presetA;
+        selectB.value = btn.dataset.presetB;
+        renderComparison();
+      });
+    });
+
+    // =========================================================================
+    // CONCRETE MIX CALCULATOR
+    // =========================================================================
+    const calcVolInput = document.getElementById('calc-volume');
+    const calcGradeSelect = document.getElementById('calc-grade');
+    const calcWcSlider = document.getElementById('calc-wc');
+
+    function updateConcreteCalc() {
+      const vol = Math.max(0.5, parseFloat(calcVolInput.value) || 1);
+      const grade = calcGradeSelect.value;
+      const wc = parseFloat(calcWcSlider.value);
+
+      document.getElementById('wc-value-badge').textContent = wc.toFixed(2);
+
+      const dryVol = vol * 1.54;
+      let cR = 1, sR = 1.5, aR = 3;
+      if (grade === 'M15') { cR = 1; sR = 2; aR = 4; }
+      else if (grade === 'M25') { cR = 1; sR = 1; aR = 2; }
+
+      const totalParts = cR + sR + aR;
+      const cementVol = (cR / totalParts) * dryVol;
+      const sandVol = (sR / totalParts) * dryVol;
+      const aggVol = (aR / totalParts) * dryVol;
+
+      const cementKg = cementVol * 1440;
+      const cementBags = Math.ceil(cementKg / 50);
+      const waterLiters = cementKg * wc;
+
+      document.getElementById('res-cement-kg').textContent = `${Math.round(cementKg).toLocaleString()} kg`;
+      document.getElementById('res-cement-bags').textContent = `${cementBags.toLocaleString()} شيكارة (50kg)`;
+      document.getElementById('res-sand').textContent = `${sandVol.toFixed(2)} m³`;
+      document.getElementById('res-aggregate').textContent = `${aggVol.toFixed(2)} m³`;
+      document.getElementById('res-water').textContent = `${Math.round(waterLiters).toLocaleString()} L`;
+
+      const co2Opc = cementKg * 0.85;
+      const co2Saved = co2Opc * 0.80;
+      document.getElementById('res-co2-opc').textContent = `${Math.round(co2Opc).toLocaleString()} kg CO₂`;
+      document.getElementById('res-co2-saved').textContent = `-${Math.round(co2Saved).toLocaleString()} kg CO₂`;
+
+      const wcNote = document.getElementById('wc-chemical-note');
+      if (wc < 0.42) {
+        wcNote.innerHTML = `<span class="text-amber-400 font-bold">تحليل كيميائي (w/c منخفضة):</span> مقاومة ضغط عالية جداً وكثافة ممتازة، لكن ماء الإماهة محدود مما يقلل قابلية التشغيل؛ يُوصى بإضافة ملدنات فائقة (Superplasticizers).`;
+      } else if (wc > 0.54) {
+        wcNote.innerHTML = `<span class="text-red-400 font-bold">تحذير كيميائي (w/c مرتفعة):</span> الماء الزائد يتبخر تاركاً مسام شعرية (Capillary Pores) تضعف جل (C-S-H) وتسهل وصول الكلوريدات لحديد التسليح.`;
+      } else {
+        wcNote.innerHTML = `<span class="text-emerald-400 font-bold">نسبة إماهة مثالية (0.42 - 0.54):</span> تضمن اكتمال تفاعل مركبات C₃S و C₂S لتكوين جل (C-S-H) عالي المقاومة مع قابلية تشغيل ممتازة.`;
+      }
+    }
+
+    calcVolInput.addEventListener('input', updateConcreteCalc);
+    calcGradeSelect.addEventListener('change', updateConcreteCalc);
+    calcWcSlider.addEventListener('input', updateConcreteCalc);
+
+    // =========================================================================
+    // INTERACTIVE CHEMISTRY QUIZ
+    // =========================================================================
+    const quizContainer = document.getElementById('quiz-container');
+    const scoreBadge = document.getElementById('quiz-score-badge');
+
+    function renderQuiz() {
+      const correctCount = Object.keys(userAnswers).filter(idx => userAnswers[idx] === quizData[idx].answer).length;
+      scoreBadge.textContent = `النتيجة: ${correctCount} / ${quizData.length}`;
+
+      quizContainer.innerHTML = quizData.map((item, qIdx) => {
+        const chosen = userAnswers[qIdx];
+        const isAnswered = chosen !== undefined;
+
+        const optionsHtml = item.options.map((opt, oIdx) => {
+          let btnClass = 'bg-navy-900 hover:bg-navy-800 border-navy-700 text-slate-200';
+          let iconHtml = '';
+          if (isAnswered) {
+            if (oIdx === item.answer) {
+              btnClass = 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold';
+              iconHtml = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            } else if (oIdx === chosen) {
+              btnClass = 'bg-red-500/20 border-red-500 text-red-300';
+              iconHtml = '<i class="fa-solid fa-circle-xmark text-red-400"></i>';
+            } else {
+              btnClass = 'bg-navy-900/50 border-navy-800 text-slate-500';
+            }
+          }
+
+          return `
+            <button type="button" data-q="${qIdx}" data-opt="${oIdx}" ${isAnswered ? 'disabled' : ''} class="quiz-opt-btn w-full text-right p-3 rounded-xl border text-xs transition flex items-center justify-between gap-2 cursor-pointer ${btnClass}">
+              <span>${opt}</span>
+              ${iconHtml}
+            </button>
+          `;
+        }).join('');
+
+        const feedbackBox = isAnswered ? `
+          <div class="mt-3 p-3 rounded-xl bg-navy-950/90 border border-navy-700 text-xs text-slate-300">
+            <strong class="text-skybrand-400">التفسير العلمي:</strong> ${item.explanation}
+          </div>
+        ` : '';
+
+        return `
+          <div class="p-5 rounded-2xl bg-navy-900/85 border border-navy-700 space-y-3">
+            <h4 class="text-sm font-extrabold text-white">${item.q}</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              ${optionsHtml}
+            </div>
+            ${feedbackBox}
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.quiz-opt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const qIdx = parseInt(btn.dataset.q, 10);
+          const oIdx = parseInt(btn.dataset.opt, 10);
+          userAnswers[qIdx] = oIdx;
+          renderQuiz();
+          if (oIdx === quizData[qIdx].answer) {
+            showToast('إجابة صحيحة! أحسنت', 'success');
+          } else {
+            showToast('إجابة غير صحيحة — راجع التفسير العلمي أسفل السؤال', 'warning');
+          }
+        });
+      });
+    }
+
+    document.getElementById('btn-reset-quiz').addEventListener('click', () => {
+      userAnswers = {};
+      renderQuiz();
+      showToast('تمت إعادة ضبط الاختبار الكيميائي', 'info');
+    });
+
+    // =========================================================================
+    // 13-SLIDE OUTLINE & FEEDBACK BOARD
+    // =========================================================================
+
+    const LESSONS = [
+      { title: 'مقدمة: أهمية مواد البناء', tag: 'Introduction', summary: 'خواص مواد البناء (الكيميائية والفيزيائية والميكانيكية والحرارية) تحدد أمان المبنى ومتانته وتكلفته وأثره البيئي.', points: ['التركيب الكيميائي يحدد الروابط والتفاعلات', 'الخواص تتحكم في القوة والمتانة والتكلفة', 'الكربون المتجسد يربط الكيمياء بالاستدامة'], formula: '' },
+      { title: 'تصنيف مواد البناء: أولية وثانوية', tag: 'Classification', summary: 'المواد الأولية تُستخدم بمعالجة محدودة (حجر، خشب، طين، رمل)، والثانوية تُصنَّع بالتسخين أو التفاعل الكيميائي (أسمنت، جير، طوب محروق، صلب، زجاج، خرسانة).', points: ['الأولية: حجر، خشب، طين، رمل', 'الثانوية: أسمنت، جير، طوب، صلب، زجاج، خرسانة'], formula: '' },
+      { title: 'الفرع 1: الحجر الطبيعي', tag: 'Branch 1', summary: 'الحجر الجيري مكوّنه الأساسي الكالسيت CaCO₃، ويتأثر بالأمطار الحمضية. الجرانيت خليط من الكوارتز والفلسبار والميكا.', points: ['الكوارتز صلادته 7 على مقياس موس والكالسيت 3', 'كثافة الجرانيت تقريبًا 2600–2750 kg/m³ (تقريبية)'], formula: 'CaCO₃ + 2H⁺ → Ca²⁺ + H₂O + CO₂↑' },
+      { title: 'الفرع 2: الطوب الطيني المحروق', tag: 'Branch 2', summary: 'الكاولينيت Al₂Si₂O₅(OH)₄ يفقد الماء عند الحرق عند حوالي 900–1100 °C، فتتكون أطوار سيليكاتية تثبت البنية. أكسيد الحديد Fe₂O₃ يعطي اللون الأحمر.', points: ['درجة الحرق تحدد اللون والقوة', 'كثافة تقريبية 1600–2000 kg/m³'], formula: 'Al₂Si₂O₅(OH)₄ → (حرق) → أطوار سيليكاتية' },
+      { title: 'الفرع 3: الخشب', tag: 'Branch 3', summary: 'الخشب يتكون أساسًا من السليلوز (C₆H₁₀O₅)ₙ بنسبة تقريبية 40–50 %، واللجنين 20–30 %. السليلوز يتحمل الشد والليجنين يعطي الصلابة.', points: ['الخشب يتمدد ويتقلص مع الرطوبة', 'كثافة الخشب الطري تقريبًا 400–700 kg/m³'], formula: '(C₆H₁₀O₅)ₙ' },
+      { title: 'الفرع 4: الأسمنت والجير', tag: 'Branch 4', summary: 'الجير يتكون بالتكليس CaCO₃ → CaO + CO₂. الكلنكر البورتلاندي يُحرق عند حوالي 1450 °C، وأطواره الرئيسية C₃S وC₂S، وعند التفاعل مع الماء يتكون هلام C-S-H الرابط.', points: ['C₃S ≈ 50–70 %، C₂S ≈ 15–30 % (نسب تقريبية)', 'التكليس يطلق تقريبًا 0.5 kg CO₂ لكل kg كلنكر'], formula: '2C₃S + 6H → C₃S₂H₃ + 3Ca(OH)₂' },
+      { title: 'الخرسانة', tag: 'Secondary', summary: 'الخرسانة عجينة أسمنت مع ركام، وتعتمد قوتها أساسًا على نسبة الماء إلى الأسمنت w/c والمعالجة (الكيور).', points: ['مثال: 350 kg/m³ أسمنت مع w/c = 0.50 يحتاج 175 kg/m³ ماء', 'قوة الخرسانة الإنشائية الشائعة 25–40 MPa (تقريبية)'], formula: 'W = C × (w/c) = 350 × 0.50 = 175 kg/m³' },
+      { title: 'الفرع 5: حديد التسليح', tag: 'Branch 5', summary: 'الفولاذ الإنشائي حديد مع كربون بنسبة تقريبية 0.2–0.3 %. داخل الخرسانة القلوية تتكون طبقة أكسيد واقية، ويتآكل الحديد عند اختراق الكلوريدات أو الكربنة لها.', points: ['تمدد الفولاذ ≈ 12 × 10⁻⁶ /°C', 'الغطاء الخرساني يحمي الحديد من الصدأ'], formula: '4Fe + 3O₂ + xH₂O → 2Fe₂O₃·xH₂O' },
+      { title: 'الفرع 6: الزجاج', tag: 'Branch 6', summary: 'زجاج الصودا والجير يتكون تقريبًا من 70–73 % SiO₂ و12–14 % Na₂O و8–12 % CaO (تقريبية). يُصهر حوالي 1500 °C ويُطفى على القصدير المنصهر ليصبح ألواحًا مستوية.', points: ['الزجاج عاكس للأشعة تحت الحمراء عند طلاء Low-E', 'الموصلية الحرارية تقريبًا 1.0 W/m·K'], formula: '' },
+      { title: 'الفرع 7 (إضافي): البيتومين والأسفلت', tag: 'Extended', summary: 'البيتومين بقايا لزجة سوداء من تقطير النفط الخام، أساسها الهيدروكربونات، ويُستخدم رابطًا للطرق وعوازل الماء. لزوجته تتغير بشدة مع الحرارة.', points: ['الأكسدة مع الزمن تجعله أصلب وأكثر هشاشة'], formula: '' },
+      { title: 'مواد حديثة: الخرسانة ذاتية الإصلاح والجيوبوليمر', tag: 'Modern', summary: 'بكتيريا منتجة لليوريز تحوّل اليوريا إلى أمونيا وCO₂، فيترسب CaCO₃ ويسد الشروخ. الجيوبوليمر يُنشَّط بالقلويات من الرماد المتطاير والميتاكاولين، وخفض CO₂ منه يختلف بشدة حسب المصدر.', points: ['CO(NH₂)₂ + H₂O → 2NH₃ + CO₂', 'Ca²⁺ + CO₃²⁻ → CaCO₃↓'], formula: 'CO(NH₂)₂ + H₂O → 2NH₃ + CO₂' },
+      { title: 'العزل النانوي: إيروجيل السيليكا', tag: 'Nano-insulation', summary: 'إيروجيل السيليكا مسامي وأغلبه هواء، وموصليته الحرارية تقريبًا 0.013–0.020 W/m·K. المقاومة الحرارية R = L / k.', points: ['50 mm إيروجيل: R = 0.050 / 0.015 = 3.33 m²·K/W', '200 mm خرسانة: R = 0.200 / 1.4 = 0.14 m²·K/W'], formula: 'R = L / k' },
+      { title: 'مسألة محلولة: تكليس CaCO₃', tag: 'Worked example', summary: 'عند تكليس 100 kg من CaCO₃ النقي. الكتل المولية: CaCO₃ = 100.09، CaO = 56.08، CO₂ = 44.01 kg/kmol.', points: ['n = 100 / 100.09 = 0.999 kmol', 'CaO = 0.999 × 56.08 = 56.03 kg', 'CO₂ = 0.999 × 44.01 = 43.97 kg', 'التحقق: 56.03 + 43.97 = 100.00 kg'], formula: 'CaCO₃ → CaO + CO₂' }
+    ];
+
+    function renderLessons() {
+      const box = document.getElementById('lessons-grid');
+      if (!box) return;
+      box.innerHTML = LESSONS.map((l, i) => `
+        <details class="glass-panel rounded-2xl p-5 material-card" ${i === 0 ? 'open' : ''}>
+          <summary class="cursor-pointer font-bold text-base text-white flex justify-between items-center gap-3">
+            <span>${escapeHTML(l.title)}</span>
+            <span class="text-[11px] text-skybrand-400 whitespace-nowrap">${escapeHTML(l.tag)}</span>
+          </summary>
+          <p class="mt-3 text-slate-300 text-sm leading-relaxed">${escapeHTML(l.summary)}</p>
+          <ul class="mt-3 list-disc pr-5 space-y-1 text-sm text-slate-200">${l.points.map(p => `<li>${escapeHTML(p)}</li>`).join('')}</ul>
+          ${l.formula ? `<div class="formula-badge mt-3 p-2 rounded-lg bg-navy-900 text-copper-400 text-sm">${escapeHTML(l.formula)}</div>` : ''}
+        </details>`).join('');
+    }
+
+
+    const AI_WORKER_URL = 'http://localhost:8787';
+    async function askAI(question) {
+      const out = document.getElementById('ai-answer');
+      if (!auth || !auth.currentUser) { showToast('سجّل دخولك الأول عشان تستخدم المساعد.', 'warning'); return; }
+      out.textContent = 'جاري التفكير...';
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(AI_WORKER_URL, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'failed');
+        out.textContent = data.answer || 'لا يوجد رد.';
+      } catch (e) {
+        out.textContent = 'حصلت مشكلة، حاول تاني بعد شوية.';
+      }
+    }
+    function setupAITutor() {
+      const sel = document.getElementById('lesson-summary-select');
+      if (sel) sel.innerHTML = LESSONS.map((l, i) => `<option value="${i}">${escapeHTML(l.title)}</option>`).join('');
+      document.getElementById('btn-lesson-summary')?.addEventListener('click', () => {
+        const l = LESSONS[Number(sel.value)];
+        askAI(`لخّص الدرس التالي في نقاط واضحة باللغة العربية مع المصطلحات الإنجليزية:\n${l.title}\n${l.summary}\n${l.points.join('\n')}`);
+      });
+      document.getElementById('btn-ai-ask')?.addEventListener('click', () => {
+        const q = document.getElementById('ai-question').value.trim();
+        if (q) askAI(q);
+      });
+    }
+
+    function renderSlides() {
+      const slidesGrid = document.getElementById('slides-grid');
+      slidesGrid.innerHTML = slidesData.map(s => `
+        <div class="p-4 rounded-2xl bg-navy-900/90 border border-navy-700 hover:border-skybrand-500/50 transition flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-skybrand-500/15 border border-skybrand-500/30 text-skybrand-400 font-mono font-extrabold text-sm flex items-center justify-center shrink-0">
+            ${String(s.num).padStart(2, '0')}
+          </div>
+          <div>
+            <span class="inline-block px-2 py-0.5 rounded bg-navy-800 text-copper-400 text-[10px] font-bold mb-1">${s.tag}</span>
+            <h4 class="text-sm font-extrabold text-white mb-1">${s.title}</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">${s.desc}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderFeedbacks() {
+      const listEl = document.getElementById('feedback-list');
+      const avgBadge = document.getElementById('avg-rating-badge');
+
+      const approvedVisitorFeedbacks = cloudFeedbacks.filter(fb => fb.status === 'approved');
+      const visibleAll = [...approvedVisitorFeedbacks, ...teamPinnedMessages];
+
+      const avg = visibleAll.length
+        ? (visibleAll.reduce((acc, f) => acc + Number(f.rating), 0) / visibleAll.length).toFixed(1)
+        : '5.0';
+      avgBadge.textContent = `التقييم العام: ${avg} / 5 (${visibleAll.length})`;
+
+      listEl.innerHTML = visibleAll.map(fb => {
+        const ratingNum = Math.min(5, Math.max(1, Number(fb.rating) || 5));
+        const stars = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
+        const isTeamOrDoc = String(fb.role || '').includes('دكتورة') || String(fb.role || '').includes('ChemBuild');
+        return `
+          <div class="p-4 rounded-2xl bg-navy-900/90 border ${isTeamOrDoc ? 'border-copper-500/40' : 'border-navy-700'} space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-extrabold text-white">${escapeHTML(fb.name)}</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isTeamOrDoc ? 'bg-copper-500/20 text-copper-400' : 'bg-skybrand-500/15 text-skybrand-400'}">
+                  ${escapeHTML(fb.role)}
+                </span>
+              </div>
+              <span class="text-xs text-copper-400 tracking-wider">${stars}</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">${escapeHTML(fb.comment)}</p>
+            <p class="text-[10px] text-slate-500">${escapeHTML(fb.timeLabel || 'الآن')}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Submit New Feedback (Saves to Firestore with automatic LocalStorage fallback)
+    document.getElementById('feedback-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('fb-name').value.trim();
+      const role = document.getElementById('fb-role').value;
+      const rating = parseInt(document.getElementById('fb-rating').value, 10);
+      const comment = document.getElementById('fb-comment').value.trim();
+      const submitBtn = document.getElementById('fb-submit-btn');
+
+      if (!name || !comment) return;
+
+      const status = autoApproveComments ? 'approved' : 'pending';
+      submitBtn.disabled = true;
+
+      try {
+        if (isFirebaseConfigured && db) {
+          await addDoc(collection(db, "feedbacks"), {
+            name,
+            role,
+            rating,
+            comment,
+            status,
+            createdAt: serverTimestamp()
+          });
+          document.getElementById('feedback-form').reset();
+          showToast(
+            autoApproveComments
+              ? 'شكراً لمشاركتك! تم حفظ التقييم في السحابة ونشره مباشرة.'
+              : 'تم إرسال تقييمك بنجاح! سيظهر فور مراجعته من فريق المشروع.',
+            'success'
+          );
+        } else {
+          throw new Error("local-mode");
+        }
+      } catch (err) {
+        // Fallback to local storage so live classroom feedback is never lost
+        cloudFeedbacks.unshift({
+          id: 'local-fb-' + Date.now(),
+          name,
+          role,
+          rating,
+          comment,
+          status,
+          timeLabel: 'الآن (محفوظ محلياً)'
+        });
+        saveLocalData();
+        renderFeedbacks();
+        renderAdminDashboard();
+        document.getElementById('feedback-form').reset();
+
+        if (err.code === 'permission-denied') {
+          setCloudStatus("rules_restricted");
+          showToast('تم حفظ التقييم محلياً! لتفعيل المزامنة السحابية للجميع، انشر قواعد Firestore Rules.', 'warning');
+        } else {
+          showToast('تم حفظ التقييم وعرضه في اللوحة بنجاح.', 'success');
+        }
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // =========================================================================
+    // ADMIN DASHBOARD (MODERATION, USERS & CSV EXPORT)
+    // =========================================================================
+    const adminLockGate = document.getElementById('admin-lock-gate');
+    const adminDashboardContent = document.getElementById('admin-dashboard-content');
+
+    function unlockAdminPanel(notify = true) {
+      isAdminUnlocked = true;
+      adminLockGate.classList.add('hidden');
+      adminDashboardContent.classList.remove('hidden');
+      attachAdminUsersListener();
+      renderAdminDashboard();
+      if (notify) showToast('تم فتح لوحة تحكم فريق ChemBuild Tech بنجاح', 'success');
+    }
+
+    document.getElementById('admin-pin-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const pin = document.getElementById('admin-pin-input').value.trim();
+      if (pin === ADMIN_PIN) {
+        document.getElementById('admin-pin-input').value = '';
+        unlockAdminPanel(true);
+      } else {
+        showToast('رمز المشرف غير صحيح!', 'error');
+      }
+    });
+
+    document.getElementById('btn-lock-admin').addEventListener('click', () => {
+      isAdminUnlocked = false;
+      if (unsubUsers) {
+        unsubUsers();
+        unsubUsers = null;
+      }
+      adminDashboardContent.classList.add('hidden');
+      adminLockGate.classList.remove('hidden');
+      showToast('تم قفل لوحة التحكم', 'info');
+    });
+
+    function updateModerationButtonsUI() {
+      const btnAuto = document.getElementById('btn-mode-auto');
+      const btnManual = document.getElementById('btn-mode-manual');
+      if (autoApproveComments) {
+        btnAuto.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-white transition cursor-pointer';
+        btnManual.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer';
+      } else {
+        btnManual.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-white transition cursor-pointer';
+        btnAuto.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer';
+      }
+    }
+
+    async function setModerationMode(isAuto) {
+      autoApproveComments = isAuto;
+      updateModerationButtonsUI();
+      if (isFirebaseConfigured && db) {
+        try {
+          await setDoc(doc(db, "settings", "moderation"), { autoApprove: isAuto }, { merge: true });
+        } catch (e) {}
+      } else {
+        saveLocalData();
+      }
+      showToast(isAuto ? 'تم تفعيل النشر المباشر للتعليقات' : 'تم تفعيل مراجعة التعليقات قبل النشر', 'info');
+    }
+
+    document.getElementById('btn-mode-auto').addEventListener('click', () => setModerationMode(true));
+    document.getElementById('btn-mode-manual').addEventListener('click', () => setModerationMode(false));
+
+    function renderAdminDashboard() {
+      if (!isAdminUnlocked) return;
+
+      const approvedCount = cloudFeedbacks.filter(f => f.status === 'approved').length + teamPinnedMessages.length;
+      const hiddenCount = cloudFeedbacks.filter(f => f.status !== 'approved').length;
+      const allVisible = [...cloudFeedbacks.filter(f => f.status === 'approved'), ...teamPinnedMessages];
+      const avg = allVisible.length
+        ? (allVisible.reduce((a, b) => a + Number(b.rating), 0) / allVisible.length).toFixed(1)
+        : '5.0';
+
+      document.getElementById('admin-stat-users').textContent = cloudUsers.length;
+      document.getElementById('admin-stat-approved').textContent = approvedCount;
+      document.getElementById('admin-stat-hidden').textContent = hiddenCount;
+      document.getElementById('admin-stat-avg').textContent = `${avg} / 5`;
+
+      // Render Comments Moderation List
+      const adminCommentsEl = document.getElementById('admin-comments-list');
+      if (cloudFeedbacks.length === 0) {
+        adminCommentsEl.innerHTML = `
+          <div class="p-6 rounded-2xl bg-navy-900/70 border border-navy-800 text-center text-xs text-slate-400">
+            لا توجد تعليقات جديدة من الزوار بعد. الرسائل الترحيبية الرسمية لفريق ChemBuild Tech مثبتة تلقائياً في اللوحة.
+          </div>
+        `;
+      } else {
+        adminCommentsEl.innerHTML = cloudFeedbacks.map(fb => {
+          const isApproved = fb.status === 'approved';
+          const statusBadgeHtml = isApproved
+            ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">ظاهر للجميع ✓</span>'
+            : '<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">مخفي / بانتظار الموافقة</span>';
+
+          const safeRating = Math.min(5, Math.max(1, Number(fb.rating) || 5));
+          return `
+            <div class="p-4 rounded-2xl bg-navy-900/90 border ${isApproved ? 'border-navy-700' : 'border-amber-500/50'} flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs font-extrabold text-white">${escapeHTML(fb.name)}</span>
+                  <span class="text-[11px] text-skybrand-400">(${escapeHTML(fb.role)})</span>
+                  <span class="text-xs text-copper-400">${'★'.repeat(safeRating)}</span>
+                  ${statusBadgeHtml}
+                </div>
+                <p class="text-xs text-slate-300">${escapeHTML(fb.comment)}</p>
+                <p class="text-[10px] text-slate-500">${escapeHTML(fb.timeLabel)}</p>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                ${!isApproved ? `
+                  <button type="button" data-action="approve" data-id="${fb.id}" class="admin-fb-btn px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-bold transition cursor-pointer">
+                    <i class="fa-solid fa-eye ml-1"></i> إظهار
+                  </button>
+                ` : `
+                  <button type="button" data-action="hide" data-id="${fb.id}" class="admin-fb-btn px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-white border border-amber-500/40 text-xs font-bold transition cursor-pointer">
+                    <i class="fa-solid fa-eye-slash ml-1"></i> إخفاء
+                  </button>
+                `}
+                <button type="button" data-action="delete" data-id="${fb.id}" class="admin-fb-btn px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white border border-red-500/40 text-xs font-bold transition cursor-pointer">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        document.querySelectorAll('.admin-fb-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            const action = btn.dataset.action;
+
+            if (isFirebaseConfigured && db && !id.startsWith('local-')) {
+              try {
+                if (action === 'approve') await updateDoc(doc(db, "feedbacks", id), { status: 'approved' });
+                else if (action === 'hide') await updateDoc(doc(db, "feedbacks", id), { status: 'pending' });
+                else if (action === 'delete') await deleteDoc(doc(db, "feedbacks", id));
+                showToast('تم تحديث حالة التعليق في السحابة بنجاح', 'success');
+              } catch (e) {
+                showToast('تعذر تنفيذ الإجراء. راجع صلاحيات Firestore Rules.', 'error');
+              }
+            } else {
+              if (action === 'approve') {
+                const item = cloudFeedbacks.find(f => f.id === id);
+                if (item) item.status = 'approved';
+              } else if (action === 'hide') {
+                const item = cloudFeedbacks.find(f => f.id === id);
+                if (item) item.status = 'pending';
+              } else if (action === 'delete') {
+                cloudFeedbacks = cloudFeedbacks.filter(f => f.id !== id);
+              }
+              saveLocalData();
+              renderFeedbacks();
+              renderAdminDashboard();
+              showToast('تم تحديث التعليق بنجاح', 'success');
+            }
+          });
+        });
+      }
+
+      // Render Registered Users Table
+      const usersTbody = document.getElementById('admin-users-tbody');
+      if (cloudUsers.length === 0) {
+        usersTbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-6 text-center text-slate-400">لا توجد حسابات مسجلة بالإيميل حتى الآن.</td>
+          </tr>
+        `;
+      } else {
+        usersTbody.innerHTML = cloudUsers.map(u => `
+          <tr class="hover:bg-navy-900/60">
+            <td class="py-3 px-3 font-bold text-white">${escapeHTML(u.name || '-')}</td>
+            <td class="py-3 px-3 font-mono text-skybrand-400" dir="ltr">${escapeHTML(u.email || '-')}</td>
+            <td class="py-3 px-3">${escapeHTML(u.role || 'عضو')}</td>
+            <td class="py-3 px-3">
+              ${u.emailVerified
+                ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">موثق بالإيميل ✓</span>'
+                : '<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">بانتظار التفعيل</span>'}
+            </td>
+            <td class="py-3 px-3">
+              <button type="button" data-uid="${u.id}" class="admin-del-user-btn text-red-400 hover:text-red-300 font-bold cursor-pointer">
+                <i class="fa-solid fa-trash-can"></i> حذف
+              </button>
+            </td>
+          </tr>
+        `).join('');
+
+        document.querySelectorAll('.admin-del-user-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const uid = btn.dataset.uid;
+            if (isFirebaseConfigured && db && !uid.startsWith('local-')) {
+              try {
+                await deleteDoc(doc(db, "users", uid));
+                showToast('تم حذف سجل المستخدم من قاعدة البيانات', 'info');
+              } catch (e) {}
+            } else {
+              cloudUsers = cloudUsers.filter(u => u.id !== uid);
+              saveLocalData();
+              renderAdminDashboard();
+              showToast('تم حذف المستخدم', 'info');
+            }
+          });
+        });
+      }
+    }
+
+    // Export CSV Helper (UTF-8 BOM for Arabic Excel support)
+    function downloadCSV(filename, rows) {
+      const csvContent = "\uFEFF" + rows.map(r => r.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('btn-export-feedbacks-csv').addEventListener('click', () => {
+      const allData = [...teamPinnedMessages, ...cloudFeedbacks];
+      const rows = [
+        ["الاسم", "الصفة", "التقييم من 5", "الحالة", "التعليق"],
+        ...allData.map(f => [f.name, f.role, f.rating, f.status === 'approved' ? 'ظاهر' : 'مخفي', f.comment])
+      ];
+      downloadCSV("ChemBuild-Tech-Feedbacks.csv", rows);
+      showToast('تم تصدير ملف التقييمات بصيغة Excel/CSV بنجاح', 'success');
+    });
+
+    document.getElementById('btn-export-users-csv').addEventListener('click', () => {
+      const rows = [
+        ["الاسم", "البريد الإلكتروني", "الصفة الأكاديمية", "حالة تفعيل البريد"],
+        ...cloudUsers.map(u => [u.name, u.email, u.role, u.emailVerified ? 'مُفعّل' : 'غير مُفعّل'])
+      ];
+      downloadCSV("ChemBuild-Tech-Users.csv", rows);
+      showToast('تم تصدير سجل الأعضاء بصيغة Excel/CSV بنجاح', 'success');
+    });
+
+    function renderAllDynamicViews() {
+      renderMaterials();
+      initComparator();
+      updateConcreteCalc();
+      renderQuiz();
+      renderSlides();
+    renderLessons();
+    setupAITutor();
+      renderFeedbacks();
+      updateModerationButtonsUI();
+    }
+
+    // Boot Application
+    renderAllDynamicViews();
+  </script>
+</body>
+</html>
